@@ -22,6 +22,11 @@ fn main() {
     let iff = a.any(|&e| e == 1.0);
     println!("\nAnswer is {iff}\n");
 
+    let pos = a.find(|&e| e == 1.0).unwrap();
+    println!("Pos {:?}", pos);
+    // println!("\nPos is {:.2}\n", pos.iter().count());
+    //pos.iter().for_each(|e| println!("{:?}", e));
+
     let mrand1 = Matrix::randomize((3, 9872));
     let mrand2 = Matrix::randomize((9872, 3));
 

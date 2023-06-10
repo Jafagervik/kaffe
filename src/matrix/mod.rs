@@ -1,3 +1,6 @@
+mod determinant_helpers;
+
+use determinant_helpers::*;
 use itertools::Itertools;
 use rand::Rng;
 use rayon::prelude::*;
@@ -512,22 +515,13 @@ impl MatrixOps for Matrix {
     }
 }
 
-fn get_minor(matrix: &Matrix, size: usize, col: usize) -> Vec<f32> {
-    (1..size)
-        .flat_map(|i| (0..size).map(move |j| (i, j)))
-        .filter_map(|(i, j)| {
-            if j != col {
-                Some(matrix.data[at!(i, j, size)])
-            } else {
-                None
-            }
-        })
-        .collect()
-}
-
 /// Matrix functions with predicates
 pub trait MatrixPredicates {
-    fn count_where<'a, F>(&self, pred: F) -> bool
+    fn count_where<'a, F>(&'a self, pred: F) -> usize
+    where
+        F: Fn(&'a f32) -> bool + 'static;
+
+    fn sum_where<'a, F>(&'a self, pred: F) -> f32
     where
         F: Fn(&'a f32) -> bool + 'static;
 
@@ -549,11 +543,18 @@ pub trait MatrixPredicates {
 }
 
 impl MatrixPredicates for Matrix {
-    fn count_where<'a, F>(&self, pred: F) -> bool
+    fn count_where<'a, F>(&'a self, pred: F) -> usize
     where
         F: Fn(&'a f32) -> bool + 'static,
     {
-        todo!()
+        self.data.iter().filter(|&e| pred(e)).count()
+    }
+
+    fn sum_where<'a, F>(&'a self, pred: F) -> f32
+    where
+        F: Fn(&'a f32) -> bool + 'static,
+    {
+        self.data.iter().filter(|&e| pred(e)).sum()
     }
 
     fn any<'a, F>(&'a self, pred: F) -> bool
@@ -574,10 +575,11 @@ impl MatrixPredicates for Matrix {
     where
         F: Fn(&'a f32) -> bool + 'static,
     {
-        todo!()
-        // let mut idx = self.data.iter().find_position(pred);
-        //
-        // self.inverse_at(idx)
+        if let Some((idx, _)) = self.data.iter().find_position(|&e| pred(e)) {
+            return Some(self.inverse_at(idx));
+        }
+
+        None
     }
 
     fn find_all<'a, F>(&'a self, pred: F) -> Option<Vec<Shape>>
@@ -590,7 +592,7 @@ impl MatrixPredicates for Matrix {
             .enumerate()
             .filter_map(|(idx, elem)| {
                 if pred(elem) {
-                    Some(self.inverse_at(idx)) // need inverse
+                    Some(self.inverse_at(idx))
                 } else {
                     None
                 }
@@ -605,29 +607,6 @@ impl MatrixPredicates for Matrix {
     }
 }
 
-fn determinant_2x2(matrix: &Matrix) -> f32 {
-    let a = matrix.data[0];
-    let b = matrix.data[1];
-    let c = matrix.data[2];
-    let d = matrix.data[3];
-
-    a * d - b * c
-}
-
-fn determinant_3x3(matrix: &Matrix) -> f32 {
-    let a = matrix.data[0];
-    let b = matrix.data[1];
-    let c = matrix.data[2];
-    let d = matrix.data[3];
-    let e = matrix.data[4];
-    let f = matrix.data[5];
-    let g = matrix.data[6];
-    let h = matrix.data[7];
-    let i = matrix.data[8];
-
-    a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g)
-}
-
 fn swap(lhs: &mut usize, rhs: &mut usize) {
     let temp = *lhs;
     *lhs = *rhs;
@@ -635,6 +614,6 @@ fn swap(lhs: &mut usize, rhs: &mut usize) {
 }
 
 #[test]
-fn lezgoo() {
+fn test_all() {
     unimplemented!();
 }
