@@ -99,6 +99,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "latte"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "itertools",
+ "rand",
+ "rayon",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.146"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -179,16 +189,6 @@ dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
  "num_cpus",
-]
-
-[[package]]
-name = "rustalgo"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "itertools",
- "rand",
- "rayon",
 ]
 
 [[package]]

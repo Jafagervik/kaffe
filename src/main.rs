@@ -1,34 +1,33 @@
 mod matrix;
+mod nn;
 
 use matrix::Matrix;
 use matrix::MatrixOps;
+use matrix::MatrixPredicates;
+
+use nn::*;
 
 fn main() {
+    let u = Matrix::init(2f32, (2, 2));
+    let v = Matrix::init(3f32, (2, 2));
+    let w = u.matmul(&v);
+    w.print();
+
     let mat = Matrix::default();
     mat.print();
 
-    let vec = vec![1f32; 20];
-    let v = Matrix::from_vec(vec, (5, 4)).unwrap();
+    test();
 
-    let eye = Matrix::eye(3);
+    let a = Matrix::eye(3);
+    let iff = a.any(|&e| e == 1.0);
+    println!("\nAnswer is {iff}\n");
 
-    println!("{:?}", eye);
+    let mrand1 = Matrix::randomize((3, 9872));
+    let mrand2 = Matrix::randomize((9872, 3));
 
-    let rand = Matrix::randomize_range(1f32, 10f32, (5, 4));
-    rand.print();
+    let mch = mrand1.matmul(&mrand2);
+    mch.print();
 
-    let a = Matrix::from_shape(4.45, (3, 5));
-    let b = Matrix::from_shape(5.55, (3, 5));
-
-    let mut c = a.add(&b);
-
-    c = c.mul(&a);
-    c.print();
-
-    let m1 = Matrix::randomize_range(1f32, 8f32, (2, 42));
-    let m2 = Matrix::randomize_range(1f32, 8f32, (42, 3));
-
-    let m3 = m1.matmul(&m2);
-
-    m3.print();
+    println!("\nMin is {:.2}\n", mch.min());
+    println!("\nMax is {:.2}\n", mch.max());
 }
