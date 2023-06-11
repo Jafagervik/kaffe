@@ -4,17 +4,15 @@ use crate::nn::transform::Transform;
 use crate::Matrix;
 use std::os;
 
-/// Represents what a single entity of our dataset will be
-type Data = f32;
-
-/// Dataloader represents A iterator basically
-pub struct CustomSet {
-    data: Vec<f32>,
-}
-
+/// Dataset represents a set of many matrices
 pub trait DataSet {
     /// Initializes a new dataset
-    fn new() -> Self;
+    fn new(
+        img_labels: Vec<String>,
+        img_dir: &'static str,
+        transform: Option<Transform>,
+        target_transform: Option<Transform>,
+    ) -> Self;
 
     /// Gives the size of the dataset
     fn size(&self) -> usize;
@@ -23,6 +21,8 @@ pub trait DataSet {
     fn get(&self, idx: usize) -> (Matrix, String);
 }
 
+/// Represents a custom dataset
+/// All common datasets will be added here by default
 pub struct CustomImageDataset {
     img_labels: Vec<String>,
     img_dir: &'static str,
