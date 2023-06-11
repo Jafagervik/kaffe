@@ -5,15 +5,19 @@
 [![Coverage Status](https://codecov.io/gh/Jafagervik/kaffe/branch/master/graph/badge.svg)](https://codecov.io/gh/Jafagervik/kaffe)
 ![Maintenance](https://img.shields.io/badge/maintenance-experimental-blue.svg)
 
+Kaffe is as per the title, a way to create Neural Networks in Rust.
 
-## Why Kaffe?
+The goal is to create a simple way to write your own models, and test them.
+Syntax should be familiar to pytorch, but some features might take 
+names from numpy or even tensorflow.
 
-Because sometimes you wanna make cool and fast stuff in rust :)
+In the future, the matrix library might be completely moved to its
+own project, but for now they're all in the same crate;
 
-## Documentation
-Full API documentation can be found [here](https://docs.rs/kaffe/latest/kaffe/).
+Why? Because sometimes you wanna make cool and fast stuff in rust :)
 
-## Example Usage
+
+## Examples
 
 ### Matrix basic example 
 
@@ -128,11 +132,21 @@ fn main() {
 }
 ```
 
+## GPU Support 
+
+As per right now, support for training on GPU is not happening anytime soon.
+Although.. transpilation IS a thing you know.
+
 For more examples, please see [examples](./examples/)
+
+## Documentation
+Full API documentation can be found [here](https://docs.rs/kaffe/latest/kaffe/).
 
 ## Features 
 - [X] Blazingly fast
 - [X] Common matrix operations exists under matrix module
+- [X] Optimizers 
+- [X] ReLU, GeLU, PReLU, Sigmoid 
 - [ ] Basic neural net features
 
 ### Version Control 
