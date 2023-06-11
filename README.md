@@ -9,7 +9,7 @@ Full API documentation can be found [here](https://docs.rs/kaffe/latest/kaffe/).
 
 ## Example Usage
 
-### Basic example 
+### Matrix basic example 
 
 ```rust 
 use kaffe::Matrix;
@@ -22,6 +22,40 @@ fn main() {
 
     // To print this beautiful matrix:
     c.print();
+}
+```
+
+### Neural net basic example - To Be Implemented
+```rust
+use kaffe::Matrix;
+use kaffe::{Net, Layers, optimizer::*, loss::*};
+
+// Here lies our model 
+struct MyNet {
+    layers: Vec<Layers>.
+}
+
+// Implement default functions
+impl Net for MyNet {
+    /// Set's up parametes for the struct 
+    fn new() -> Self {
+        todo!()
+    }
+
+    /// Define a forward pass 
+    fn forward() {
+        todo!()
+    }
+}
+
+fn main() {
+    let criterion = BCELoss();
+    let optimizer = SGD(0.001);
+
+    let model = Net::new();
+    model.train();
+
+    model.parameters();
 }
 ```
 
