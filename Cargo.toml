@@ -9,7 +9,7 @@ description = "Pytorch, but make it rust :)"
 repository = "https://github.com/Jafagervik/latte.git"
 
 keywords = ["ai","matrix", "linear algebra", "tensorflow", "pytorch", "numpy"]
-categories = ["matrix", "linear algebra", "ai"]
+categories = ["matrix", "ai"]
 
 
 [dependencies]
