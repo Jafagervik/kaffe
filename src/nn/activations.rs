@@ -3,15 +3,12 @@
 #[warn(missing_docs)]
 
 /// Yes
-const E: f32 = std::f32::consts::E;
+use crate::constants::E;
+use crate::Matrix;
 
 /// ReLU is the most used activation funcion besides Sigmoid
-pub fn ReLU(x: f32) -> f32 {
-    if x >= 0f32 {
-        x
-    } else {
-        0f32
-    }
+pub fn ReLU(x: &Matrix) -> Matrix {
+    Matrix::default()
 }
 
 /// PReLU is a slight modification to ReLU

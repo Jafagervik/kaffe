@@ -4,7 +4,7 @@
 mod determinant_helpers;
 
 use determinant_helpers::*;
-use itertools::Itertools;
+use itertools::{iproduct, Itertools};
 use rand::Rng;
 use rayon::prelude::*;
 use std::fs;
@@ -24,12 +24,16 @@ macro_rules! at {
 }
 
 /// Represents all data we want to get
-#[derive(Clone)]
+#[derive(Clone, PartialEq, PartialOrd)]
 pub struct Matrix {
     /// Data contained inside the matrix with f32 values
     pub data: Vec<f32>,
     /// Shape of matrix, (rows, cols)
     pub shape: Shape,
+    /// Rows
+    pub nrows: usize,
+    /// Cols
+    pub ncols: usize,
 }
 
 impl Debug for Matrix {
@@ -137,7 +141,12 @@ impl Matrix {
             return Self::default();
         }
 
-        Self { data, shape }
+        Self {
+            data,
+            shape,
+            nrows: shape.0,
+            ncols: shape.1,
+        }
     }
 
     /// Represents a default identity matrix
@@ -157,6 +166,8 @@ impl Matrix {
         Self {
             data: vec![0f32; 9],
             shape: (3, 3),
+            nrows: 3,
+            ncols: 3,
         }
     }
 
@@ -478,6 +489,46 @@ impl Matrix {
         self.data[at!(i, j, self.cols())]
     }
 
+    ///  Gets a vec slice
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::Matrix;
+    ///
+    /// let matrix = Matrix::init(10.5, (4,4));
+    /// let slice = matrix.get_vec_slice(1,1, 2,2);
+    ///
+    /// assert_eq!(slice, vec![10.5,10.5,10.5,10.5]);
+    /// ```
+    pub fn get_vec_slice(
+        &self,
+        start_row: usize,
+        start_col: usize,
+        dy: usize,
+        dx: usize,
+    ) -> Vec<f32> {
+        iproduct!(start_row..start_row + dy, start_col..start_col + dx)
+            .map(|(i, j)| self.get(i, j))
+            .collect()
+    }
+
+    ///  Sets element based on is and js
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::Matrix;
+    ///
+    /// let mut matrix = Matrix::init(10.5, (2,3));
+    /// matrix.set(1,2, 11.5);
+    ///
+    /// assert_eq!(matrix.get(1,2), 11.5);
+    /// ```
+    pub fn set(&mut self, i: usize, j: usize, value: f32) {
+        self.data[i * j + self.ncols] = value;
+    }
+
     /// Calculates the (row, col) for a matrix by a single index
     ///
     /// # Examples
@@ -741,6 +792,20 @@ pub trait MatrixLinAlg {
     /// ```
     fn sub(&self, other: &Self) -> Self;
 
+    /// Subtracts one array from another and returns absval
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
+    /// let matrix1 = Matrix::init(10.0, (2,2));
+    /// let matrix2 = Matrix::init(15.0, (2,2));
+    ///
+    /// assert_eq!(matrix1.sub_abs(&matrix2).data[0], 5.0);
+    /// ```
+    fn sub_abs(&self, other: &Self) -> Self;
+
     /// Dot product of two matrices
     ///
     /// # Examples
@@ -823,6 +888,36 @@ pub trait MatrixLinAlg {
     /// assert_eq!(result_mat.data[0], 10.0);
     /// ```
     fn div_val(&self, val: f32) -> Self;
+
+    /// Takes the logarithm of each element
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
+    /// let matrix = Matrix::init(2.0, (2,2));
+    ///
+    /// let result_mat = matrix.log(2.0);
+    ///
+    /// assert_eq!(result_mat.data, vec![1.0, 1.0, 1.0, 1.0]);
+    /// ```
+    fn log(&self, base: f32) -> Self;
+
+    /// Pows each value in a matrix by val times
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
+    /// let matrix = Matrix::init(2.0, (2,2));
+    ///
+    /// let result_mat = matrix.pow(2);
+    ///
+    /// assert_eq!(result_mat.data, vec![4.0, 4.0, 4.0, 4.0]);
+    /// ```
+    fn pow(&self, val: i32) -> Self;
 
     /// Adds a matrix in-place to a matrix
     ///
@@ -1074,6 +1169,23 @@ impl MatrixLinAlg for Matrix {
         mat
     }
 
+    fn sub_abs(&self, other: &Self) -> Self {
+        if self.rows() != other.rows() || self.cols() != other.cols() {
+            panic!("NOOO!");
+        }
+
+        let mut mat = Self::zeros_like(self);
+
+        for i in 0..self.rows() {
+            for j in 0..self.cols() {
+                let a = self.get(i, j);
+                let b = other.get(i, j);
+                mat.data[at!(i, j, self.cols())] = (a - b).abs();
+            }
+        }
+        mat
+    }
+
     fn mul(&self, other: &Self) -> Self {
         if self.rows() != other.rows() || self.cols() != other.cols() {
             panic!("NOOO!");
@@ -1133,6 +1245,17 @@ impl MatrixLinAlg for Matrix {
 
     fn div_val(&self, val: f32) -> Self {
         let data: Vec<f32> = self.data.par_iter().map(|&e| e / val).collect();
+
+        Self::new(data, self.shape)
+    }
+
+    fn log(&self, base: f32) -> Self {
+        let data: Vec<f32> = self.data.par_iter().map(|&e| e.log(base)).collect();
+
+        Self::new(data, self.shape)
+    }
+    fn pow(&self, val: i32) -> Self {
+        let data: Vec<f32> = self.data.par_iter().map(|&e| e.powi(val)).collect();
 
         Self::new(data, self.shape)
     }

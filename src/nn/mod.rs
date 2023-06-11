@@ -1,9 +1,13 @@
 #![warn(missing_docs)]
-//! Here we go
+//! Neural Network Base module
+//!
+//! Should be kept as simple as possible to avoid confusion,
+//! and if people want to make their own versions
+//! of optimizers, losses, and so on; that should be supported
 pub mod activations;
 pub mod losses;
 pub mod optimizers;
-// mod pooling;
+pub mod pooling;
 
 use crate::matrix::{Matrix, MatrixLinAlg, Shape};
 use activations::*;
@@ -18,12 +22,15 @@ pub fn convolution(matrix: Matrix, kernel: Matrix, stride: usize, padding: usize
 
 /// Net is a net builder people can use to create epic neural networks
 pub struct Net {
+    /// Represents all layers in the network
     layers: Vec<Layer>,
 }
 
-#[test]
-fn name() {
-    let a = Matrix::eye(4);
-    a.print();
-    assert!(1 == 1);
+/// Module is simular to how nn.Module from pytorch works
+pub trait Module {
+    /// Initializes a neural network
+    fn init() -> Net;
+
+    /// Default forward pass must be implemented
+    fn forward(&mut self);
 }
