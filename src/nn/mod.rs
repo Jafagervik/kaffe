@@ -12,14 +12,14 @@ pub mod optimizer;
 pub mod pooling;
 pub mod transform;
 
-use crate::matrix::{Matrix, MatrixLinAlg, Shape};
+use crate::tensor::{Tensor, TensorLinAlg};
 //use activation::*;
 
 /// struct Layer represents a layer in our net
 pub struct Layer {}
 
 /// Convolve a matrix with a certain kernel
-pub fn convolution(matrix: Matrix, kernel: Matrix, stride: usize, padding: usize) -> Matrix {
+pub fn convolution(tensor: Tensor, kernel: Tensor, stride: usize, padding: usize) -> Tensor {
     todo!()
 }
 

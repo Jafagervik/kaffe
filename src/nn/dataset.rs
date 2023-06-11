@@ -1,7 +1,7 @@
 //! Module for defining and implementing datasets
 #![warn(missing_docs)]
 use crate::nn::transform::Transform;
-use crate::Matrix;
+use crate::Tensor;
 use std::os;
 
 /// Dataset represents a set of many matrices
@@ -18,7 +18,7 @@ pub trait DataSet {
     fn size(&self) -> usize;
 
     /// Gets an element at a certain index
-    fn get(&self, idx: usize) -> (Matrix, String);
+    fn get(&self, idx: usize) -> (Tensor, String);
 }
 
 /// Represents a custom dataset
@@ -49,7 +49,7 @@ impl DataSet for CustomImageDataset {
         self.img_labels.len()
     }
 
-    fn get(&self, idx: usize) -> (Matrix, String) {
+    fn get(&self, idx: usize) -> (Tensor, String) {
         todo!()
         // img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
         // image = read_image(img_path)

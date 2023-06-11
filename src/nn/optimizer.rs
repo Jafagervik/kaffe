@@ -1,7 +1,7 @@
 //! Common optimizers for neural networks
 #![warn(missing_docs)]
 
-use crate::{Matrix, MatrixLinAlg, MatrixPredicates};
+use crate::{Tensor, TensorLinAlg};
 use rayon::prelude::*;
 
 /// Trait contains all the functions needed to run an optimizer
@@ -12,7 +12,7 @@ pub trait Optimizer {
     /// Function that minimizes based on cost function
     fn minimize<F>(&mut self, cost: F, vars: &mut Vec<f32>)
     where
-        F: Fn(&Matrix, &Matrix) -> f32;
+        F: Fn(&Tensor, &Tensor) -> f32;
 }
 
 /// Adam Optimizer
@@ -20,7 +20,7 @@ pub trait Optimizer {
 /// # Examples
 ///
 /// ```
-/// use kaffe::{Matrix, MatrixLinAlg};
+/// use kaffe::{Tensor, TensorLinAlg};
 /// use kaffe::nn::optimizer::Adam;
 /// use crate::kaffe::nn::optimizer::Optimizer;
 ///
@@ -64,7 +64,7 @@ impl Optimizer for Adam {
 
     fn minimize<F>(&mut self, cost: F, vars: &mut Vec<f32>)
     where
-        F: Fn(&Matrix, &Matrix) -> f32,
+        F: Fn(&Tensor, &Tensor) -> f32,
     {
         todo!()
     }
@@ -75,7 +75,7 @@ impl Optimizer for Adam {
 /// # Examples
 ///
 /// ```
-/// use kaffe::{Matrix, MatrixLinAlg};
+/// use kaffe::{Tensor, TensorLinAlg};
 /// use kaffe::nn::optimizer::SGD;
 /// use crate::kaffe::nn::optimizer::Optimizer;
 ///
@@ -102,7 +102,7 @@ impl Optimizer for SGD {
 
     fn minimize<F>(&mut self, cost: F, vars: &mut Vec<f32>)
     where
-        F: Fn(&Matrix, &Matrix) -> f32,
+        F: Fn(&Tensor, &Tensor) -> f32,
     {
         todo!()
     }

@@ -3,30 +3,30 @@
 //! Sigmoid and variants of ReLU are for now the ones implemented
 #![warn(missing_docs)]
 
-/// Yes
 use crate::constants::{E, PI};
-use crate::{Matrix, MatrixLinAlg};
+use crate::{Tensor, TensorLinAlg, TensorOps};
+use rayon::prelude::*;
 
 /// ReLU is the most used activation funcion besides Sigmoid
 ///
 /// # Examples
 ///
 /// ```
-/// use kaffe::{Matrix, MatrixLinAlg};
+/// use kaffe::{Tensor, TensorLinAlg};
 /// use kaffe::nn::activation::ReLU;
 ///
-/// let matrix = Matrix::new(vec![-1.0, -2.0, 1.0, 2.0], (2,2));
+/// let matrix = Tensor::new(vec![-1.0, -2.0, 1.0, 2.0], (2,2));
 ///
 /// assert_eq!(ReLU(&matrix).data, vec![0.0, 0.0, 1.0, 2.0]);
 /// ```
-pub fn ReLU(x: &Matrix) -> Matrix {
+pub fn ReLU(x: &Tensor) -> Tensor {
     let data: Vec<f32> = x
         .data
-        .iter()
+        .par_iter()
         .map(|&e| if e >= 0.0 { e } else { 0.0 })
         .collect();
 
-    Matrix::new(data, x.shape)
+    Tensor::new(data, x.shape)
 }
 
 /// PReLU is a slight modification to ReLU
@@ -34,21 +34,21 @@ pub fn ReLU(x: &Matrix) -> Matrix {
 /// # Examples
 ///
 /// ```
-/// use kaffe::{Matrix, MatrixLinAlg};
+/// use kaffe::{Tensor, TensorLinAlg};
 /// use kaffe::nn::activation::PReLU;
 ///
-/// let matrix = Matrix::new(vec![-1.0, -2.0, 1.0, 2.0], (2,2));
+/// let matrix = Tensor::new(vec![-1.0, -2.0, 1.0, 2.0], (2,2));
 ///
 /// assert_eq!(PReLU(&matrix, -1.0).data, vec![1.0, 2.0, 1.0, 2.0]);
 /// ```
-pub fn PReLU(x: &Matrix, alpha: f32) -> Matrix {
+pub fn PReLU(x: &Tensor, alpha: f32) -> Tensor {
     let data: Vec<f32> = x
         .data
-        .iter()
+        .par_iter()
         .map(|&e| if e >= 0.0 { e } else { e * alpha })
         .collect();
 
-    Matrix::new(data, x.shape)
+    Tensor::new(data, x.shape)
 }
 
 /// Sigmoid function
@@ -56,21 +56,21 @@ pub fn PReLU(x: &Matrix, alpha: f32) -> Matrix {
 /// # Examples
 ///
 /// ```
-/// use kaffe::{Matrix, MatrixLinAlg};
+/// use kaffe::{Tensor, TensorLinAlg};
 /// use kaffe::nn::activation::Sigmoid;
 ///
-/// let matrix = Matrix::new(vec![1.0, 2.0, 1.0, 2.0], (2,2));
+/// let matrix = Tensor::new(vec![1.0, 2.0, 1.0, 2.0], (2,2));
 ///
 /// // assert_eq!(Sigmoid(&matrix).data, vec![1.0, 2.0, 1.0, 2.0]);
 /// ```
-pub fn Sigmoid(x: &Matrix) -> Matrix {
+pub fn Sigmoid(x: &Tensor) -> Tensor {
     let data: Vec<f32> = x
         .data
-        .iter()
+        .par_iter()
         .map(|&e| E.powf(e) / (E.powf(e) + 1f32))
         .collect();
 
-    Matrix::new(data, x.shape)
+    Tensor::new(data, x.shape)
 }
 
 /// GeLU activation function
@@ -80,14 +80,14 @@ pub fn Sigmoid(x: &Matrix) -> Matrix {
 /// # Examples
 ///
 /// ```
-/// use kaffe::{Matrix, MatrixLinAlg};
+/// use kaffe::{Tensor, TensorLinAlg};
 /// use kaffe::nn::activation::GeLU;
 ///
-/// let matrix = Matrix::new(vec![1.0, 2.0, 1.0, 2.0], (2,2));
+/// let matrix = Tensor::new(vec![1.0, 2.0, 1.0, 2.0], (2,2));
 ///
 /// // assert_eq!(GeLU(&matrix).data, vec![1.0, 2.0, 1.0, 2.0]);
 /// ```
-pub fn GeLU(x: &Matrix) -> Matrix {
+pub fn GeLU(x: &Tensor) -> Tensor {
     let lhs = x.mul_val(0.5);
 
     let inner = x
