@@ -1,6 +1,6 @@
 // TODO: Add more tests
-use latte::matrix::{Matrix, MatrixLinAlg, MatrixPredicates};
-use latte::nn::activations::ReLU;
+use kaffe::matrix::{Matrix, MatrixLinAlg, MatrixPredicates};
+use kaffe::nn::activations::ReLU;
 
 #[test]
 fn relu() {

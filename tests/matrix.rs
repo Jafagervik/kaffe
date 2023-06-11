@@ -1,5 +1,5 @@
-// TODO: Add more tests
-use latte::matrix::{Matrix, MatrixLinAlg, MatrixPredicates};
+//! Integration tests
+use kaffe::matrix::{Matrix, MatrixLinAlg, MatrixPredicates};
 
 #[test]
 fn creation() {
