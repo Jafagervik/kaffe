@@ -1,8 +1,7 @@
 //! This module contains the most used non-linear activation functions
 //!
 //! Sigmoid and variants of ReLU are for now the ones implemented
-#[warn(non_snake_case)]
-#[warn(missing_docs)]
+#![warn(missing_docs)]
 
 /// Yes
 use crate::constants::{E, PI};
