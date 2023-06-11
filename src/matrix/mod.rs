@@ -80,6 +80,16 @@ impl FromStr for Matrix {
 /// Printer functions for the matrix
 impl Matrix {
     /// Prints out the matrix based on shape. Also outputs datatype
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::eye(2);
+    /// matrix.print();
+    ///
+    /// [1.00 0.00
+    ///  0.00 1.00], dtype = f32
+    /// ```
     pub fn print(&self) {
         print!("[");
 
@@ -110,6 +120,15 @@ impl Matrix {
 impl Matrix {
     /// Creates a new matrix from a vector and the shape you want.
     /// Will default init if it does not work
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::new(vec![1.0,2.0,3.0,4.0], (2,2));
+    ///
+    /// assert_eq!(matrix.size(), 4);
+    /// assert_eq!(matrix.shape, (2,2));
+    /// ```
     pub fn new(data: Vec<f32>, shape: Shape) -> Self {
         if shape.0 * shape.1 != data.len() {
             return Self::default();
@@ -119,6 +138,16 @@ impl Matrix {
     }
 
     /// Represents a default identity matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::default();
+    ///
+    /// assert_eq!(matrix.size(), 9);
+    /// assert_eq!(matrix.shape, (3,3));
+    /// assert_eq!(matrix.data[0], 1f32);
+    /// ```
     pub fn default() -> Self {
         Self {
             data: vec![0f32; 9],
@@ -126,12 +155,32 @@ impl Matrix {
         }
     }
 
-    /// Init works like zeros or ones
+    /// Initializes a matrix with the same value
+    /// given from parameter 'value'
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(4f32, (1,2))
+    ///
+    /// assert_eq!(matrix.data, vec![4f32,4f32,4f32,4f32]);
+    /// assert_eq!(matrix.shape, (1,2));
+    /// ```
     pub fn init(value: f32, shape: Shape) -> Self {
         Self::from_shape(value, shape)
     }
 
-    /// Returns an eye matrix
+    /// Returns an eye matrix which for now is the same as the
+    /// identity matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::eye(2)
+    ///
+    /// assert_eq!(matrix.data, vec![1f32, 0f32, 0f32, 1f32]);
+    /// assert_eq!(matrix.shape, (2,2));
+    /// ```
     pub fn eye(size: usize) -> Self {
         let mut data = vec![0f32; size * size];
 
@@ -141,12 +190,29 @@ impl Matrix {
     }
 
     /// Identity is same as eye, just for nerds
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::identity(2)
+    ///
+    /// assert_eq!(matrix.data, vec![1f32, 0f32, 0f32, 1f32]);
+    /// assert_eq!(matrix.shape, (2,2));
+    /// ```
     pub fn identity(size: usize) -> Self {
         Self::eye(size)
     }
 
-    /// Some sort of error handling
-    /// Really trivial function
+    /// Tries to create a matrix from a slize and shape
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let s = vec![1f32, 2f32, 3f32, 4f32].as_slize();
+    /// let matrix = Matrix::from_slice(s, (4,1))
+    ///
+    /// assert_eq!(matrix.shape, (4,1));
+    /// ```
     pub fn from_slice(arr: &[f32], shape: Shape) -> Option<Self> {
         if shape.0 * shape.1 != arr.len() {
             return None;
@@ -155,33 +221,91 @@ impl Matrix {
         Some(Self::new(arr.to_owned(), shape))
     }
 
-    /// All zeroes baby
+    /// Creates a matrix where all values are 0.
+    /// All sizes are based on a shape
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::zeros((4,1))
+    ///
+    /// assert_eq!(matrix.shape, (4,1));
+    /// assert_eq!(matrix.data, vec![4; 0f32]);
+    /// ```
     pub fn zeros(shape: Shape) -> Self {
         Self::from_shape(0f32, shape)
     }
 
-    /// All zeroes baby
+    /// Creates a matrix where all values are 1.
+    /// All sizes are based on a shape
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::ones((4,1))
+    ///
+    /// assert_eq!(matrix.shape, (4,1));
+    /// assert_eq!(matrix.data, vec![4; 1f32]);
+    /// ```
     pub fn ones(shape: Shape) -> Self {
         Self::from_shape(1f32, shape)
     }
 
-    /// Gives you a zero like matrix based on another matrix
+    /// Creates a matrix where all values are 0.
+    /// All sizes are based on an already existent matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix1 = Matrix::default();
+    /// let matrix2 = Matrix::zeros_like(&matrix1);
+    ///
+    /// assert_eq!(matrix2.shape, matrix1.shape);
+    /// ```
     pub fn zeros_like(other: &Self) -> Self {
         Self::from_shape(0f32, other.shape)
     }
 
-    /// Gives you a one like matrix based on another matrix
+    /// Creates a matrix where all values are 1.
+    /// All sizes are based on an already existent matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix1 = Matrix::default();
+    /// let matrix2 = Matrix::ones_like(&matrix1);
+    ///
+    /// assert_eq!(matrix.shape, (3,3));
+    /// ```
     pub fn ones_like(other: &Self) -> Self {
         Self::from_shape(1f32, other.shape)
     }
 
-    /// Gives you a random 0-1 like matrix based on another matrix
-    /// Range is 0 to 1
+    /// Creates a matrix where all values are random between 0 and 1.
+    /// All sizes are based on an already existent matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix1 = Matrix::default();
+    /// let matrix2 = Matrix::random_like(&matrix1);
+    ///
+    /// assert_eq!(matrix1.shape, matrix2.shape);
+    /// ```
     pub fn random_like(matrix: &Self) -> Self {
         Self::randomize_range(0f32, 1f32, matrix.shape)
     }
 
-    /// Random initialize values
+    /// Creates a matrix where all values are random between start..=end.
+    /// Shape in new array is given through parameter 'shape'
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::randomize_range(1f32, 2f32, (2,3));
+    ///
+    /// assert_eq!(matrix.shape, (2,3));
+    /// ```
     pub fn randomize_range(start: f32, end: f32, shape: Shape) -> Self {
         let mut rng = rand::thread_rng();
 
@@ -194,12 +318,40 @@ impl Matrix {
         Self::new(data, shape)
     }
 
-    /// Range here will be -1 to 1
+    /// Creates a matrix where all values are random between -1..=1.
+    /// Shape in new array is given through parameter 'shape'
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::randomize((2,3));
+    ///
+    /// assert_eq!(matrix.shape, (200,3000));
+    /// assert_eq!(matrix.data.iter().max().unwrap(), 1f32);
+    /// ```
     pub fn randomize(shape: Shape) -> Self {
         Self::randomize_range(-1f32, 1f32, shape)
     }
 
     /// Parses from file, but will return a default matrix if nothing is given
+    ///
+    ///
+    /// # Examples
+    ///
+    ///
+    /// ```
+    /// let path = "path/to/file";
+    /// let matrix = Matrix::from_file(path);
+    ///
+    /// assert_eq!(matrix.shape, (3,3));
+    /// ```
+    ///
+    /// ## Example file
+    /// ```
+    /// 1.0 2.0 3.0
+    /// 1.0 2.0 3.0
+    /// 1.0 2.0 3.0
+    /// ```
     pub fn from_file(path: &'static str) -> Self {
         path.parse::<Self>().unwrap_or_else(|_| Self::default())
     }
@@ -242,26 +394,66 @@ impl Matrix {
     }
 
     /// Get number of columns in the matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(10.5, (2,3));
+    ///
+    /// assert_eq!(matrix.cols(), 3)
+    /// ```
     pub fn cols(&self) -> usize {
         self.shape.1
     }
 
     /// Get number of rows in the matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(10.5, (2,3));
+    ///
+    /// assert_eq!(matrix.rows(), 2)
+    /// ```
     pub fn rows(&self) -> usize {
         self.shape.0
     }
 
-    /// Total size of matrix
+    /// Get the total size of the matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(10.5, (2,3));
+    ///
+    /// assert_eq!(matrix.size(), 6)
+    /// ```
     pub fn size(&self) -> usize {
         self.shape.0 * self.shape.1
     }
 
-    /// Could get an out of bounds
+    ///  Gets element based on is and js
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(10.5, (2,3));
+    ///
+    /// assert_eq!(matrix.get(1,2), 10.5);
+    /// ```
     pub fn get(&self, i: usize, j: usize) -> f32 {
         self.data[at!(i, j, self.cols())]
     }
 
     /// Calculates the (row, col) for a matrix by a single index
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(10.5, (2,3));
+    ///
+    /// assert_eq!(matrix.inverse_at(4, (2,1)));
+    /// ```
     pub fn inverse_at(&self, idx: usize) -> Shape {
         let mut idx = idx;
 
@@ -275,6 +467,14 @@ impl Matrix {
     }
 
     /// Finds maximum element in the matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(10.5, (2,3));
+    ///
+    /// assert_eq!(matrix.max(), 10.5);
+    /// ```
     pub fn max(&self) -> f32 {
         // Matrix must have at least one element, thus we can unwrap
         *self
@@ -284,7 +484,16 @@ impl Matrix {
             .unwrap()
     }
 
-    /// Finds maximum element in the matrix
+    /// Finds minimum element in the matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut matrix = Matrix::init(10.5, (2,3));
+    /// matrix.data[2] = 1.0;
+    ///
+    /// assert_eq!(matrix.minimum(), 1.0);
+    /// ```
     pub fn min(&self) -> f32 {
         // Matrix must have at least one element, thus we can unwrap
         *self
@@ -294,14 +503,16 @@ impl Matrix {
             .unwrap()
     }
 
-    /// Finds maximum element in the matrix based on dimension
+    /// Finds argmax based on row or col
     ///
-    /// dimension: whether to look in rows or cols
-    /// rowcol: which of these to look into
+    /// # Examples
     ///
-    /// Example:
-    ///     let a = Matrix::eye(3);
-    ///     a.argmax(2, Dimension::Col)
+    /// ```
+    /// let mut matrix = Matrix::init(10.5, (2,3));
+    /// matrix.data[2] = 1.0;
+    ///
+    /// assert_eq!(matrix.minimum(), 1.0);
+    /// ```
     pub fn argmax(&self, rowcol: usize, dimension: Dimension) -> Option<f32> {
         match dimension {
             Dimension::Row => {
@@ -333,14 +544,16 @@ impl Matrix {
         }
     }
 
-    /// Finds minimum element in the matrix based on dimension
+    /// Finds argmax based on row or col
     ///
-    /// dimension: whether to look in rows or cols
-    /// rowcol: which of these to look into
+    /// # Examples
     ///
-    /// Example:
-    ///     let a = Matrix::eye(3);
-    ///     a.argmin(2, Dimension::Row)
+    /// ```
+    /// let mut matrix = Matrix::init(10.5, (2,3));
+    /// matrix.data[2] = 1.0;
+    ///
+    /// assert_eq!(matrix.minimum(), 1.0);
+    /// ```
     pub fn argmin(&self, rowcol: usize, dimension: Dimension) -> Option<f32> {
         match dimension {
             Dimension::Row => {
@@ -372,17 +585,42 @@ impl Matrix {
         }
     }
 
-    /// Sums up all elements in matrix
+    /// Finds total sum of matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(10, (2,2));
+    ///
+    /// assert_eq!(matrix.cumsum(), 40.0);
+    /// ```
     pub fn cumsum(&self) -> f32 {
         self.data.par_iter().sum()
     }
 
-    /// Sums up all elements in matrix
+    /// Multiplies  all elements in matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(10, (2,2));
+    ///
+    /// assert_eq!(matrix.cumprod(), 10000.0);
+    /// ```
     pub fn cumprod(&self) -> f32 {
         self.data.par_iter().product()
     }
 
     /// Sums up elements over given dimension and axis
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(10, (2,2));
+    ///
+    /// assert_eq!(matrix.sum(0, Dimension::Row), 20.0);
+    /// assert_eq!(matrix.sum(0, Dimension::Col), 20.0);
+    /// ```
     pub fn sum(&self, rowcol: usize, dimension: Dimension) -> f32 {
         match dimension {
             Dimension::Row => self
@@ -396,6 +634,15 @@ impl Matrix {
     }
 
     /// Prods up elements over given rowcol and dimension
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(10, (2,2));
+    ///
+    /// assert_eq!(matrix.prod(0, Dimension::Row), 100.0);
+    /// assert_eq!(matrix.prod(0, Dimension::Col), 100.0);
+    /// ```
     pub fn prod(&self, rowcol: usize, dimension: Dimension) -> f32 {
         match dimension {
             Dimension::Row => self
@@ -418,69 +665,283 @@ impl Matrix {
 /// performed on matrices
 pub trait MatrixLinAlg {
     /// Adds one matrix to another
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix1 = Matrix::init(10.0, (2,2));
+    /// let matrix2 = Matrix::init(10.0, (2,2));
+    ///
+    /// assert_eq!(matrix1.add(&matrix2).data[0], 20.0);
+    /// ```
     fn add(&self, other: &Self) -> Self;
 
     /// Subtracts one array from another
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix1 = Matrix::init(20.0, (2,2));
+    /// let matrix2 = Matrix::init(10.0, (2,2));
+    ///
+    /// assert_eq!(matrix1.sub(&matrix2).data[0], 10.0);
+    /// ```
     fn sub(&self, other: &Self) -> Self;
 
     /// Dot product of two matrices
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix1 = Matrix::init(20.0, (2,2));
+    /// let matrix2 = Matrix::init(10.0, (2,2));
+    ///
+    /// assert_eq!(matrix1.mul(&matrix2).data[0], 200.0);
+    /// ```
     fn mul(&self, other: &Self) -> Self;
 
     /// Bad handling of zero div
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix1 = Matrix::init(20.0, (2,2));
+    /// let matrix2 = Matrix::init(10.0, (2,2));
+    ///
+    /// assert_eq!(matrix1.div(&matrix2).data[0], 2.0);
+    /// ```
     fn div(&self, other: &Self) -> Self;
 
     /// Adds a value to a matrix and returns a new matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(20.0, (2,2));
+    /// let value: f32 = 2.0;
+    /// assert_eq!(matrix.add_val(value).data[0], 22.0);
+    /// ```
     fn add_val(&self, val: f32) -> Self;
 
     /// Substracts a value to a matrix and returns a new matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(20.0, (2,2));
+    /// let value: f32 = 2.0;
+    /// assert_eq!(matrix.sub_val(value).data[0], 18.0);
+    /// ```
     fn sub_val(&self, val: f32) -> Self;
 
     /// Multiplies a value to a matrix and returns a new matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(20.0, (2,2));
+    /// let value: f32 = 2.0;
+    /// assert_eq!(matrix.mul_val(value).data[0], 40.0);
+    /// ```
     fn mul_val(&self, val: f32) -> Self;
 
     /// Divides a value to a matrix and returns a new matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(20.0, (2,2));
+    /// let value: f32 = 2.0;
+    ///
+    /// let result_mat = matrix.div_val(value);
+    ///
+    /// assert_eq!(result_mat.data[0], 10.0);
+    /// ```
     fn div_val(&self, val: f32) -> Self;
 
     /// Adds a matrix in-place to a matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(20.0, (2,2));
+    /// let value: f32 = 2.0;
+    ///
+    /// matrix.add_self(value);
+    ///
+    /// assert_eq!(matrix.get(0,0), 22.0);
+    /// ```
     fn add_self(&mut self, other: &Self);
 
     /// Subtracts a matrix in-place to a matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(20.0, (2,2));
+    /// let value: f32 = 2.0;
+    ///
+    /// matrix.sub_self(value);
+    ///
+    /// assert_eq!(matrix.get(0,0), 18.0);
+    /// ```
     fn sub_self(&mut self, other: &Self);
 
     /// Multiplies a matrix in-place to a matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(20.0, (2,2));
+    /// let value: f32 = 2.0;
+    ///
+    /// matrix.mul_self(value);
+    ///
+    /// assert_eq!(matrix.get(0,0), 40.0);
+    /// ```
     fn mul_self(&mut self, other: &Self);
 
     /// Divides a matrix in-place to a matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut matrix1 = Matrix::init(20.0, (2,2));
+    /// let matrix2 = Matrix::init(20.0, (2,2));
+    ///
+    /// matrix1.div_self(&matrix2);
+    ///
+    /// assert_eq!(matrix.get(0,0), 10.0);
+    /// ```
     fn div_self(&mut self, other: &Self);
 
     /// Adds a value in-place to a matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(20.0, (2,2));
+    /// let value: f32 = 2.0;
+    ///
+    /// matrix.add_self(value);
+    ///
+    /// assert_eq!(matrix.get(0,0), 22.0);
+    /// ```
     fn add_val_self(&mut self, val: f32);
 
     /// Subtracts a value in-place to a matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(20.0, (2,2));
+    /// let value: f32 = 2.0;
+    ///
+    /// matrix.sub_self(value);
+    ///
+    /// assert_eq!(matrix.get(0,0), 18.0);
+    /// ```
     fn sub_val_self(&mut self, val: f32);
 
     /// Mults a value in-place to a matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(20.0, (2,2));
+    /// let value: f32 = 2.0;
+    ///
+    /// matrix.mul_self(value);
+    ///
+    /// assert_eq!(matrix.get(0,0), 40.0);
+    /// ```
     fn mul_val_self(&mut self, val: f32);
 
     /// Divs a value in-place to a matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(20.0, (2,2));
+    /// let value: f32 = 2.0;
+    ///
+    /// matrix.div_self(value);
+    ///
+    /// assert_eq!(matrix.get(0,0), 10.0);
+    /// ```
     fn div_val_self(&mut self, val: f32);
 
     /// Transposed matrix multiplications
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix1 = Matrix::init(2.0, (2,4));
+    /// let matrix2 = Matrix::init(2.0, (4,2));
+    ///
+    /// let result = matrix1.matmul(&matrix2);
+    ///
+    /// assert_eq!(result.get(0,0), 16.0);
+    /// assert_eq!(result.shape, (2,2));
+    /// ```
     fn matmul(&self, other: &Self) -> Self;
 
     /// Find the determinant of a matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(2.0, (2,2));
+    ///
+    /// assert_eq!(matrix.determinant(), 0.0);
+    /// ```
     fn determinant(&self) -> f32;
 
     /// Transpose a matrix in-place
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut matrix = Matrix::init(2.0, (2,100));
+    /// matrix.transpose();
+    ///
+    /// assert_eq!(matrix.shape, (100,2));
+    /// ```
     fn transpose(&mut self);
 
     /// Shorthand call for transpose
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut matrix = Matrix::init(2.0, (2,100));
+    /// matrix.t();
+    ///
+    /// assert_eq!(matrix.shape, (100,2));
+    /// ```
     fn t(&mut self);
 
     /// Transpose a matrix and return a copy
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut matrix = Matrix::init(2.0, (2,100));
+    /// let result = matrix.transpose();
+    ///
+    /// assert_eq!(result.shape, (100,2));
+    /// ```
     fn transpose_copy(&self) -> Self;
 
     /// Find the eigenvale of a matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut matrix = Matrix::init(2.0, (2,100));
+    ///
+    /// assert_eq!(matrix.eigenvalue(), 42f32);
+    /// ```
     fn eigenvalue(&self) -> f32;
 }
 
@@ -705,31 +1166,79 @@ impl MatrixLinAlg for Matrix {
 /// Matrix functions with predicates
 pub trait MatrixPredicates {
     /// Counts all occurances where predicate holds
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(2.0, (2,4));
+    ///
+    /// assert_eq!(matrix.count_where(|&e| e == 2.0), 8);
+    /// ```
     fn count_where<'a, F>(&'a self, pred: F) -> usize
     where
         F: Fn(&'a f32) -> bool + 'static;
 
     /// Sums all occurances where predicate holds
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(2.0, (2,4));
+    ///
+    /// assert_eq!(matrix.sum_where(|&e| e == 2.0), 16.0);
+    /// ```
     fn sum_where<'a, F>(&'a self, pred: F) -> f32
     where
         F: Fn(&'a f32) -> bool + 'static;
 
     /// Return whether or not a predicate holds at least once
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(2.0, (2,4));
+    ///
+    /// assert_eq!(matrix.any(|&e| e == 2.0), true);
+    /// ```
     fn any<'a, F>(&'a self, pred: F) -> bool
     where
         F: Fn(&'a f32) -> bool + 'static;
 
     /// Returns whether or not predicate holds for all values
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::randomize_range(1.0, 4.0, (2,4));
+    ///
+    /// assert_eq!(matrix.all(|&e| e >= 1.0), true);
+    /// ```
     fn all<'a, F>(&'a self, pred: F) -> bool
     where
         F: Fn(&'a f32) -> bool + 'static;
 
     /// Finds first index where predicates holds if possible
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(2.0, (2,4));
+    ///
+    /// assert_eq!(matrix.find(|&e| e >= 1.0), Some((0,0)));
+    /// ```
     fn find<'a, F>(&'a self, pred: F) -> Option<Shape>
     where
         F: Fn(&'a f32) -> bool + 'static;
 
     /// Finds all indeces where predicates holds if possible
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let matrix = Matrix::init(2.0, (2,4));
+    ///
+    /// assert_eq!(matrix.find_all(|&e| e >= 3.0), None);
+    /// ```
     fn find_all<'a, F>(&'a self, pred: F) -> Option<Vec<Shape>>
     where
         F: Fn(&'a f32) -> bool + 'static;
