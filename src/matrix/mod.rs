@@ -705,6 +705,74 @@ impl Matrix {
         self.data.par_iter().product()
     }
 
+    /// Gets the average of the matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::Matrix;
+    ///
+    /// let matrix = Matrix::init(10f32, (2,2));
+    ///
+    /// assert_eq!(matrix.avg(), 10.0);
+    /// ```
+    pub fn avg(&self) -> f32 {
+        self.data.par_iter().sum::<f32>() / self.data.len() as f32
+    }
+
+    /// Gets the mean of the matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::Matrix;
+    ///
+    /// let matrix = Matrix::init(10f32, (2,2));
+    ///
+    /// assert_eq!(matrix.mean(), 10.0);
+    /// ```
+    pub fn mean(&self) -> f32 {
+        self.avg()
+    }
+
+    /// Gets the median of the matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::Matrix;
+    ///
+    /// let matrix = Matrix::new(vec![1.0, 4.0, 6.0, 5.0], (2,2));
+    ///
+    /// assert!(matrix.median() >= 4.45 && matrix.median() <= 4.55);
+    /// ```
+    pub fn median(&self) -> f32 {
+        match self.data.len() % 2 {
+            0 => {
+                let half: usize = self.data.len() / 2;
+
+                self.data
+                    .iter()
+                    .sorted_by(|a, b| a.partial_cmp(&b).unwrap())
+                    .skip(half - 1)
+                    .take(2)
+                    .sum::<f32>()
+                    / 2.0
+            }
+            1 => {
+                let half: usize = self.data.len() / 2;
+
+                self.data
+                    .iter()
+                    .sorted_by(|a, b| a.partial_cmp(&b).unwrap())
+                    .nth(half)
+                    .copied()
+                    .unwrap()
+            }
+            _ => unreachable!(),
+        }
+    }
+
     /// Sums up elements over given dimension and axis
     ///
     /// # Examples
@@ -951,6 +1019,21 @@ pub trait MatrixLinAlg {
     /// ```
     fn pow(&self, val: i32) -> Self;
 
+    /// Takes the absolute values of the matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
+    /// let matrix = Matrix::init(20.0, (2,2));
+    ///
+    /// let res = matrix.abs();
+    ///
+    /// // assert_eq!(matrix1.get(0,0), 22.0);
+    /// ```
+    fn abs(&self) -> Self;
+
     /// Adds a matrix in-place to a matrix
     ///
     /// # Examples
@@ -1014,6 +1097,36 @@ pub trait MatrixLinAlg {
     /// assert_eq!(matrix1.get(0,0), 10.0);
     /// ```
     fn div_self(&mut self, other: &Self);
+
+    /// Adds a value in-place to a matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
+    /// let mut matrix = Matrix::init(20.0, (2,2));
+    /// let value: f32 = 2.0;
+    ///
+    /// matrix.add_val_self(value);
+    ///
+    /// assert_eq!(matrix.get(0,0), 22.0);
+    /// ```
+
+    /// Abs matrix in-place to a matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
+    /// let mut matrix = Matrix::init(20.0, (2,2));
+    ///
+    /// matrix.abs_self()
+    ///
+    /// // assert_eq!(matrix1.get(0,0), 22.0);
+    /// ```
+    fn abs_self(&mut self);
 
     /// Adds a value in-place to a matrix
     ///
@@ -1305,6 +1418,12 @@ impl MatrixLinAlg for Matrix {
         Self::new(data, self.shape)
     }
 
+    fn abs(&self) -> Self {
+        let data: Vec<f32> = self.data.par_iter().map(|&e| e.abs()).collect();
+
+        Self::new(data, self.shape)
+    }
+
     fn add_self(&mut self, other: &Self) {
         self.data
             .par_iter_mut()
@@ -1331,6 +1450,10 @@ impl MatrixLinAlg for Matrix {
             .par_iter_mut()
             .zip(&other.data)
             .for_each(|(a, b)| *a /= b);
+    }
+
+    fn abs_self(&mut self) {
+        self.data.par_iter_mut().for_each(|e| *e = e.abs());
     }
 
     fn add_val_self(&mut self, val: f32) {

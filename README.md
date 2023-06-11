@@ -119,7 +119,7 @@ fn main() {
     let test_dl = DataLoader::new(&d2);
 
     let model = Net::init();
-    let optimizer = SGD(0.001);
+    let optimizer = SGD::init(0.001, 0.8);
 
     for epoch in 1..EPOCHS+1 {
         train(&model, &train_dl, &optimizer, epoch);

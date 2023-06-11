@@ -3,6 +3,11 @@
 
 use crate::{Matrix, MatrixLinAlg, MatrixPredicates};
 
+/// Represents all methods necessary to create a loss function
+pub trait Loss {
+    fn backward();
+}
+
 /// Binary Cross entropy loss
 ///
 /// # Examples

@@ -5,6 +5,8 @@
 //! and if people want to make their own versions
 //! of optimizers, losses, and so on; that should be supported
 pub mod activation;
+pub mod dataloader;
+pub mod dataset;
 pub mod loss;
 pub mod optimizer;
 pub mod pooling;
