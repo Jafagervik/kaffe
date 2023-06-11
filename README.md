@@ -1,5 +1,11 @@
 # Kaffe - A Pytorch inspired library written in rust 
 
+[![Crates.io](https://img.shields.io/crates/v/kaffe.svg)](https://crates.io/crates/kaffe)
+[![Documentation](https://docs.rs/kaffe/badge.svg)](https://docs.rs/kaffe/)
+[![Coverage Status](https://codecov.io/gh/Jafagervik/kaffe/branch/master/graph/badge.svg)](https://codecov.io/gh/Jafagervik/kaffe)
+![Maintenance](https://img.shields.io/badge/maintenance-experimental-blue.svg)
+
+
 ## Why Kaffe?
 
 Because sometimes you wanna make cool and fast stuff in rust :)
