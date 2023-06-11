@@ -400,10 +400,89 @@ impl Tensor {
 
 /// Basic Tensor operations
 /// Add, sum, mean and so on
-pub trait TensorOps {}
+pub trait TensorOps {
+    fn add(&self, other: &Self) -> Self;
+    fn sub(&self, other: &Self) -> Self;
+    fn mul(&self, other: &Self) -> Self;
+    fn div(&self, other: &Self) -> Self;
 
-/// Specialized Tensor operations for linear algebra
-pub trait TensorLinAlg {}
+    fn add_val(&self, val: f32) -> Self;
+    fn sub_val(&self, val: f32) -> Self;
+    fn mul_val(&self, val: f32) -> Self;
+    fn div_val(&self, val: f32) -> Self;
+
+    fn add_self(&mut self, other: &Self);
+    fn sub_self(&mut self, other: &Self);
+    fn mul_self(&mut self, other: &Self);
+    fn div_self(&mut self, other: &Self);
+
+    fn add_val_self(&mut self, val: f32);
+    fn sub_val_self(&mut self, val: f32);
+    fn mul_val_self(&mut self, val: f32);
+    fn div_val_self(&mut self, val: f32);
+}
+
+/// Mathematical functions on tensor
+pub trait TensorMath {
+    /// Takes the log(base) of every element in Tensor
+    fn log(&self, base: i32) -> Self;
+
+    /// Takes the natural logarithm of every element in Tensor
+    fn ln(&self) -> Self;
+
+    /// Gets tanh of every element in tensor
+    fn tanh(&self) -> Self;
+
+    /// Pows every element by exp  
+    fn pow(&self, exp: i32) -> Self;
+
+    /// Find square root of every element in tensor
+    fn sqrt(&self, base: usize) -> Self;
+}
+
+impl TensorMath for Tensor {
+    fn log(&self, base: i32) -> Self {
+        todo!()
+    }
+
+    fn ln(&self) -> Self {
+        todo!()
+    }
+
+    fn tanh(&self) -> Self {
+        todo!()
+    }
+
+    fn pow(&self, exp: i32) -> Self {
+        todo!()
+    }
+
+    fn sqrt(&self, base: usize) -> Self {
+        todo!()
+    }
+}
+
+/// Specialized Tensor operations for linear algebra, on matrices
+/// Matrix in this case will be the last two dims
+pub trait TensorLinAlg {
+    /// Matrix multiplication with transposition
+    fn matmul(lhs: &Self, rhs: &Self) -> Self;
+
+    /// Finds eigenvalue of a matrix
+    fn eigenvalue(&self) -> f32;
+
+    /// Finds determinant of a matrix
+    fn determinant(&self) -> Self;
+
+    /// Transpose
+    fn transpose(&mut self);
+
+    /// Transpose
+    fn T(&mut self);
+
+    /// Transpose into new copy
+    fn transpose_copy() -> Self;
+}
 
 /// Tensor predicates
 impl Tensor {
