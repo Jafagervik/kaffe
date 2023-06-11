@@ -99,7 +99,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "latte"
+name = "kaffe"
 version = "0.0.1"
 dependencies = [
  "anyhow",

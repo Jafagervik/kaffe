@@ -262,7 +262,7 @@ impl Matrix {
     }
 
     /// Calculates the (row, col) for a matrix by a single index
-    fn inverse_at(&self, idx: usize) -> Shape {
+    pub fn inverse_at(&self, idx: usize) -> Shape {
         let mut idx = idx;
 
         // Get amount of rows
@@ -805,4 +805,14 @@ fn swap(lhs: &mut usize, rhs: &mut usize) {
     let temp = *lhs;
     *lhs = *rhs;
     *rhs = temp;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn internal() {
+        assert_eq!(4, 4);
+    }
 }

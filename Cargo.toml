@@ -1,5 +1,5 @@
 [package]
-name = "latte"
+name = "kaffe"
 version = "0.0.1"
 edition = "2021"
 authors = ["Joergen Aleksander Fagervik <jorgenafagervik@gmail.com>"]
@@ -20,6 +20,3 @@ rayon = "1.7.0"
 
 [dev-dependencies]
 
-[lib]
-name = "latte"
-path = "src/lib.rs"
