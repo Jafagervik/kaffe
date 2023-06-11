@@ -3,6 +3,8 @@
 use crate::Matrix;
 
 /// Calculates a 2x2 determinant
+///
+/// # Examples
 pub fn determinant_2x2(matrix: &Matrix) -> f32 {
     let a = matrix.data[0];
     let b = matrix.data[1];

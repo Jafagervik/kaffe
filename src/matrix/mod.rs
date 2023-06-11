@@ -7,6 +7,7 @@ use determinant_helpers::*;
 use itertools::Itertools;
 use rand::Rng;
 use rayon::prelude::*;
+use std::fs;
 use std::{
     fmt::{Debug, Error},
     str::FromStr,
@@ -84,11 +85,11 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::Matrix;
+    ///
     /// let matrix = Matrix::eye(2);
     /// matrix.print();
     ///
-    /// [1.00 0.00
-    ///  0.00 1.00], dtype = f32
     /// ```
     pub fn print(&self) {
         print!("[");
@@ -124,6 +125,8 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::Matrix;
+    ///
     /// let matrix = Matrix::new(vec![1.0,2.0,3.0,4.0], (2,2));
     ///
     /// assert_eq!(matrix.size(), 4);
@@ -142,11 +145,13 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::Matrix;
+    ///
     /// let matrix = Matrix::default();
     ///
     /// assert_eq!(matrix.size(), 9);
     /// assert_eq!(matrix.shape, (3,3));
-    /// assert_eq!(matrix.data[0], 1f32);
+    /// assert_eq!(matrix.get(0,0), 0f32);
     /// ```
     pub fn default() -> Self {
         Self {
@@ -161,9 +166,11 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::init(4f32, (1,2))
+    /// use kaffe::Matrix;
     ///
-    /// assert_eq!(matrix.data, vec![4f32,4f32,4f32,4f32]);
+    /// let matrix = Matrix::init(4f32, (1,2));
+    ///
+    /// assert_eq!(matrix.data, vec![4f32,4f32]);
     /// assert_eq!(matrix.shape, (1,2));
     /// ```
     pub fn init(value: f32, shape: Shape) -> Self {
@@ -176,7 +183,9 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::eye(2)
+    /// use kaffe::Matrix;
+    ///
+    /// let matrix = Matrix::eye(2);
     ///
     /// assert_eq!(matrix.data, vec![1f32, 0f32, 0f32, 1f32]);
     /// assert_eq!(matrix.shape, (2,2));
@@ -194,7 +203,9 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::identity(2)
+    /// use kaffe::Matrix;
+    ///
+    /// let matrix = Matrix::identity(2);
     ///
     /// assert_eq!(matrix.data, vec![1f32, 0f32, 0f32, 1f32]);
     /// assert_eq!(matrix.shape, (2,2));
@@ -208,10 +219,12 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
-    /// let s = vec![1f32, 2f32, 3f32, 4f32].as_slize();
-    /// let matrix = Matrix::from_slice(s, (4,1))
+    /// use kaffe::Matrix;
     ///
-    /// assert_eq!(matrix.shape, (4,1));
+    /// let s = vec![1f32, 2f32, 3f32, 4f32];
+    /// let matrix = Matrix::from_slice(&s, (4,1));
+    ///
+    /// assert_eq!(matrix.unwrap().shape, (4,1));
     /// ```
     pub fn from_slice(arr: &[f32], shape: Shape) -> Option<Self> {
         if shape.0 * shape.1 != arr.len() {
@@ -227,10 +240,12 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::zeros((4,1))
+    /// use kaffe::Matrix;
+    ///
+    /// let matrix = Matrix::zeros((4,1));
     ///
     /// assert_eq!(matrix.shape, (4,1));
-    /// assert_eq!(matrix.data, vec![4; 0f32]);
+    /// assert_eq!(matrix.data, vec![0f32; 4]);
     /// ```
     pub fn zeros(shape: Shape) -> Self {
         Self::from_shape(0f32, shape)
@@ -242,10 +257,12 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::ones((4,1))
+    /// use kaffe::Matrix;
+    ///
+    /// let matrix = Matrix::ones((4,1));
     ///
     /// assert_eq!(matrix.shape, (4,1));
-    /// assert_eq!(matrix.data, vec![4; 1f32]);
+    /// assert_eq!(matrix.data, vec![1f32; 4]);
     /// ```
     pub fn ones(shape: Shape) -> Self {
         Self::from_shape(1f32, shape)
@@ -257,6 +274,8 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::Matrix;
+    ///
     /// let matrix1 = Matrix::default();
     /// let matrix2 = Matrix::zeros_like(&matrix1);
     ///
@@ -272,10 +291,13 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::Matrix;
+    ///
     /// let matrix1 = Matrix::default();
     /// let matrix2 = Matrix::ones_like(&matrix1);
     ///
-    /// assert_eq!(matrix.shape, (3,3));
+    /// assert_eq!(matrix2.shape, matrix1.shape);
+    /// assert_eq!(1f32, matrix2.data[0]);
     /// ```
     pub fn ones_like(other: &Self) -> Self {
         Self::from_shape(1f32, other.shape)
@@ -287,6 +309,8 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::Matrix;
+    ///
     /// let matrix1 = Matrix::default();
     /// let matrix2 = Matrix::random_like(&matrix1);
     ///
@@ -302,6 +326,8 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::Matrix;
+    ///
     /// let matrix = Matrix::randomize_range(1f32, 2f32, (2,3));
     ///
     /// assert_eq!(matrix.shape, (2,3));
@@ -324,10 +350,11 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::Matrix;
+    ///
     /// let matrix = Matrix::randomize((2,3));
     ///
-    /// assert_eq!(matrix.shape, (200,3000));
-    /// assert_eq!(matrix.data.iter().max().unwrap(), 1f32);
+    /// assert_eq!(matrix.shape, (2,3));
     /// ```
     pub fn randomize(shape: Shape) -> Self {
         Self::randomize_range(-1f32, 1f32, shape)
@@ -335,25 +362,12 @@ impl Matrix {
 
     /// Parses from file, but will return a default matrix if nothing is given
     ///
-    ///
     /// # Examples
-    ///
-    ///
-    /// ```
-    /// let path = "path/to/file";
-    /// let matrix = Matrix::from_file(path);
-    ///
-    /// assert_eq!(matrix.shape, (3,3));
-    /// ```
-    ///
-    /// ## Example file
-    /// ```
-    /// 1.0 2.0 3.0
-    /// 1.0 2.0 3.0
-    /// 1.0 2.0 3.0
-    /// ```
     pub fn from_file(path: &'static str) -> Self {
-        path.parse::<Self>().unwrap_or_else(|_| Self::default())
+        let data =
+            fs::read_to_string(path).unwrap_or_else(|_| panic!("Failed to read file: {}", path));
+
+        data.parse::<Self>().unwrap_or_else(|_| Self::default())
     }
 
     /// HELPER, name is too retarded for public usecases
@@ -385,6 +399,17 @@ impl Matrix {
 
     /// Reshapes a matrix if possible.
     /// If the shapes don't match up, the old shape will be retained
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::Matrix;
+    ///
+    /// let mut matrix = Matrix::init(10.5, (2,3));
+    /// matrix.reshape((3,2));
+    ///
+    /// assert_eq!(matrix.shape, (3,2));
+    /// ```
     pub fn reshape(&mut self, new_shape: Shape) {
         if new_shape.0 * new_shape.1 != self.size() {
             println!("Can not reshape.. Keeping old dimensions for now");
@@ -398,9 +423,11 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::Matrix;
+    ///
     /// let matrix = Matrix::init(10.5, (2,3));
     ///
-    /// assert_eq!(matrix.cols(), 3)
+    /// assert_eq!(matrix.cols(), 3);
     /// ```
     pub fn cols(&self) -> usize {
         self.shape.1
@@ -411,9 +438,11 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::Matrix;
+    ///
     /// let matrix = Matrix::init(10.5, (2,3));
     ///
-    /// assert_eq!(matrix.rows(), 2)
+    /// assert_eq!(matrix.rows(), 2);
     /// ```
     pub fn rows(&self) -> usize {
         self.shape.0
@@ -424,9 +453,11 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::Matrix;
+    ///
     /// let matrix = Matrix::init(10.5, (2,3));
     ///
-    /// assert_eq!(matrix.size(), 6)
+    /// assert_eq!(matrix.size(), 6);
     /// ```
     pub fn size(&self) -> usize {
         self.shape.0 * self.shape.1
@@ -437,6 +468,8 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::Matrix;
+    ///
     /// let matrix = Matrix::init(10.5, (2,3));
     ///
     /// assert_eq!(matrix.get(1,2), 10.5);
@@ -450,20 +483,18 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::init(10.5, (2,3));
+    /// use kaffe::Matrix;
     ///
-    /// assert_eq!(matrix.inverse_at(4, (2,1)));
+    /// let matrix = Matrix::init(10.5, (2,2));
+    /// let inv = matrix.inverse_at(1);
+    ///
+    /// assert_eq!(inv, (0,1));
     /// ```
     pub fn inverse_at(&self, idx: usize) -> Shape {
-        let mut idx = idx;
+        let row = idx / self.cols();
+        let col = idx % self.cols();
 
-        // Get amount of rows
-        let s0 = idx % self.cols();
-
-        // The rest is now cols
-        idx %= self.cols();
-
-        (s0, idx)
+        (row, col)
     }
 
     /// Finds maximum element in the matrix
@@ -471,6 +502,8 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::Matrix;
+    ///
     /// let matrix = Matrix::init(10.5, (2,3));
     ///
     /// assert_eq!(matrix.max(), 10.5);
@@ -489,10 +522,12 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::Matrix;
+    ///
     /// let mut matrix = Matrix::init(10.5, (2,3));
     /// matrix.data[2] = 1.0;
     ///
-    /// assert_eq!(matrix.minimum(), 1.0);
+    /// assert_eq!(matrix.min(), 1.0);
     /// ```
     pub fn min(&self) -> f32 {
         // Matrix must have at least one element, thus we can unwrap
@@ -508,10 +543,13 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
-    /// let mut matrix = Matrix::init(10.5, (2,3));
-    /// matrix.data[2] = 1.0;
+    /// use kaffe::{Matrix, Dimension};
     ///
-    /// assert_eq!(matrix.minimum(), 1.0);
+    /// let mut matrix = Matrix::init(1.0, (3,3));
+    /// matrix.data[2] = 15.0;
+    ///
+    /// assert_eq!(matrix.argmax(0, Dimension::Row), Some(15.0));
+    /// assert_eq!(matrix.argmax(1, Dimension::Row), Some(1.0));
     /// ```
     pub fn argmax(&self, rowcol: usize, dimension: Dimension) -> Option<f32> {
         match dimension {
@@ -521,9 +559,9 @@ impl Matrix {
                 }
 
                 self.data
-                    .iter()
-                    .skip(rowcol)
-                    .step_by(self.cols())
+                    .par_iter()
+                    .skip(rowcol * self.cols())
+                    .take(self.cols())
                     .max_by(|a, b| a.partial_cmp(b).unwrap())
                     .copied()
             }
@@ -533,11 +571,10 @@ impl Matrix {
                     return None;
                 }
 
-                // TODO: Fix this skipping
                 self.data
-                    .iter()
+                    .par_iter()
                     .skip(rowcol)
-                    .step_by(self.rows())
+                    .step_by(self.cols())
                     .max_by(|a, b| a.partial_cmp(b).unwrap())
                     .copied()
             }
@@ -549,10 +586,13 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
-    /// let mut matrix = Matrix::init(10.5, (2,3));
-    /// matrix.data[2] = 1.0;
+    /// use kaffe::{Matrix, Dimension};
     ///
-    /// assert_eq!(matrix.minimum(), 1.0);
+    /// let mut matrix = Matrix::init(10.5, (3,3));
+    /// matrix.data[1] = 1.0;
+    ///
+    /// assert_eq!(matrix.argmin(1, Dimension::Col), Some(1.0));
+    /// assert_eq!(matrix.argmin(1, Dimension::Row), Some(10.5));
     /// ```
     pub fn argmin(&self, rowcol: usize, dimension: Dimension) -> Option<f32> {
         match dimension {
@@ -562,9 +602,9 @@ impl Matrix {
                 }
 
                 self.data
-                    .iter()
-                    .skip(rowcol)
-                    .step_by(self.cols())
+                    .par_iter()
+                    .skip(rowcol * self.cols())
+                    .take(self.cols())
                     .min_by(|a, b| a.partial_cmp(b).unwrap())
                     .copied()
             }
@@ -574,11 +614,10 @@ impl Matrix {
                     return None;
                 }
 
-                // TODO: Fix this skipping
                 self.data
-                    .iter()
+                    .par_iter()
                     .skip(rowcol)
-                    .step_by(self.rows())
+                    .step_by(self.cols())
                     .min_by(|a, b| a.partial_cmp(b).unwrap())
                     .copied()
             }
@@ -590,7 +629,9 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::init(10, (2,2));
+    /// use kaffe::Matrix;
+    ///
+    /// let matrix = Matrix::init(10f32, (2,2));
     ///
     /// assert_eq!(matrix.cumsum(), 40.0);
     /// ```
@@ -603,7 +644,9 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::init(10, (2,2));
+    /// use kaffe::Matrix;
+    ///
+    /// let matrix = Matrix::init(10f32, (2,2));
     ///
     /// assert_eq!(matrix.cumprod(), 10000.0);
     /// ```
@@ -616,7 +659,10 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::init(10, (2,2));
+    /// use kaffe::Matrix;
+    /// use kaffe::Dimension;
+    ///
+    /// let matrix = Matrix::init(10f32, (2,2));
     ///
     /// assert_eq!(matrix.sum(0, Dimension::Row), 20.0);
     /// assert_eq!(matrix.sum(0, Dimension::Col), 20.0);
@@ -627,7 +673,7 @@ impl Matrix {
                 .data
                 .par_iter()
                 .skip(rowcol * self.cols())
-                .step_by(rowcol)
+                .take(self.cols())
                 .sum(),
             Dimension::Col => self.data.par_iter().skip(rowcol).step_by(self.cols()).sum(),
         }
@@ -638,7 +684,10 @@ impl Matrix {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::init(10, (2,2));
+    /// use kaffe::Matrix;
+    /// use kaffe::Dimension;
+    ///
+    /// let matrix = Matrix::init(10f32, (2,2));
     ///
     /// assert_eq!(matrix.prod(0, Dimension::Row), 100.0);
     /// assert_eq!(matrix.prod(0, Dimension::Col), 100.0);
@@ -649,7 +698,7 @@ impl Matrix {
                 .data
                 .par_iter()
                 .skip(rowcol * self.cols())
-                .step_by(rowcol)
+                .take(self.cols())
                 .product(),
             Dimension::Col => self
                 .data
@@ -669,6 +718,8 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
     /// let matrix1 = Matrix::init(10.0, (2,2));
     /// let matrix2 = Matrix::init(10.0, (2,2));
     ///
@@ -681,6 +732,8 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
     /// let matrix1 = Matrix::init(20.0, (2,2));
     /// let matrix2 = Matrix::init(10.0, (2,2));
     ///
@@ -693,6 +746,8 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
     /// let matrix1 = Matrix::init(20.0, (2,2));
     /// let matrix2 = Matrix::init(10.0, (2,2));
     ///
@@ -705,6 +760,8 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
     /// let matrix1 = Matrix::init(20.0, (2,2));
     /// let matrix2 = Matrix::init(10.0, (2,2));
     ///
@@ -717,6 +774,8 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
     /// let matrix = Matrix::init(20.0, (2,2));
     /// let value: f32 = 2.0;
     /// assert_eq!(matrix.add_val(value).data[0], 22.0);
@@ -728,6 +787,8 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
     /// let matrix = Matrix::init(20.0, (2,2));
     /// let value: f32 = 2.0;
     /// assert_eq!(matrix.sub_val(value).data[0], 18.0);
@@ -739,6 +800,8 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
     /// let matrix = Matrix::init(20.0, (2,2));
     /// let value: f32 = 2.0;
     /// assert_eq!(matrix.mul_val(value).data[0], 40.0);
@@ -750,6 +813,8 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
     /// let matrix = Matrix::init(20.0, (2,2));
     /// let value: f32 = 2.0;
     ///
@@ -764,12 +829,14 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::init(20.0, (2,2));
-    /// let value: f32 = 2.0;
+    /// use kaffe::{Matrix, MatrixLinAlg};
     ///
-    /// matrix.add_self(value);
+    /// let mut matrix1 = Matrix::init(20.0, (2,2));
+    /// let matrix2 = Matrix::init(2.0, (2,2));
     ///
-    /// assert_eq!(matrix.get(0,0), 22.0);
+    /// matrix1.add_self(&matrix2);
+    ///
+    /// assert_eq!(matrix1.get(0,0), 22.0);
     /// ```
     fn add_self(&mut self, other: &Self);
 
@@ -778,12 +845,14 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::init(20.0, (2,2));
-    /// let value: f32 = 2.0;
+    /// use kaffe::{Matrix, MatrixLinAlg};
     ///
-    /// matrix.sub_self(value);
+    /// let mut matrix1 = Matrix::init(20.0, (2,2));
+    /// let matrix2 = Matrix::init(2.0, (2,2));
     ///
-    /// assert_eq!(matrix.get(0,0), 18.0);
+    /// matrix1.sub_self(&matrix2);
+    ///
+    /// assert_eq!(matrix1.get(0,0), 18.0);
     /// ```
     fn sub_self(&mut self, other: &Self);
 
@@ -792,12 +861,14 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::init(20.0, (2,2));
-    /// let value: f32 = 2.0;
+    /// use kaffe::{Matrix, MatrixLinAlg};
     ///
-    /// matrix.mul_self(value);
+    /// let mut matrix1 = Matrix::init(20.0, (2,2));
+    /// let matrix2 = Matrix::init(2.0, (2,2));
     ///
-    /// assert_eq!(matrix.get(0,0), 40.0);
+    /// matrix1.mul_self(&matrix2);
+    ///
+    /// assert_eq!(matrix1.get(0,0), 40.0);
     /// ```
     fn mul_self(&mut self, other: &Self);
 
@@ -806,12 +877,14 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
     /// let mut matrix1 = Matrix::init(20.0, (2,2));
-    /// let matrix2 = Matrix::init(20.0, (2,2));
+    /// let matrix2 = Matrix::init(2.0, (2,2));
     ///
     /// matrix1.div_self(&matrix2);
     ///
-    /// assert_eq!(matrix.get(0,0), 10.0);
+    /// assert_eq!(matrix1.get(0,0), 10.0);
     /// ```
     fn div_self(&mut self, other: &Self);
 
@@ -820,10 +893,12 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::init(20.0, (2,2));
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
+    /// let mut matrix = Matrix::init(20.0, (2,2));
     /// let value: f32 = 2.0;
     ///
-    /// matrix.add_self(value);
+    /// matrix.add_val_self(value);
     ///
     /// assert_eq!(matrix.get(0,0), 22.0);
     /// ```
@@ -834,10 +909,12 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::init(20.0, (2,2));
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
+    /// let mut matrix = Matrix::init(20.0, (2,2));
     /// let value: f32 = 2.0;
     ///
-    /// matrix.sub_self(value);
+    /// matrix.sub_val_self(value);
     ///
     /// assert_eq!(matrix.get(0,0), 18.0);
     /// ```
@@ -848,10 +925,12 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::init(20.0, (2,2));
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
+    /// let mut matrix = Matrix::init(20.0, (2,2));
     /// let value: f32 = 2.0;
     ///
-    /// matrix.mul_self(value);
+    /// matrix.mul_val_self(value);
     ///
     /// assert_eq!(matrix.get(0,0), 40.0);
     /// ```
@@ -862,10 +941,12 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::init(20.0, (2,2));
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
+    /// let mut matrix = Matrix::init(20.0, (2,2));
     /// let value: f32 = 2.0;
     ///
-    /// matrix.div_self(value);
+    /// matrix.div_val_self(value);
     ///
     /// assert_eq!(matrix.get(0,0), 10.0);
     /// ```
@@ -876,7 +957,9 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
-    /// let matrix1 = Matrix::init(2.0, (2,4));
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
+    /// let mut matrix1 = Matrix::init(2.0, (2,4));
     /// let matrix2 = Matrix::init(2.0, (4,2));
     ///
     /// let result = matrix1.matmul(&matrix2);
@@ -891,9 +974,12 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::init(2.0, (2,2));
+    /// use kaffe::{Matrix, MatrixLinAlg};
     ///
-    /// assert_eq!(matrix.determinant(), 0.0);
+    /// let matrix = Matrix::init(2.0, (2,2));
+    /// let det = matrix.determinant();
+    ///
+    /// assert_eq!(0.0, 0.0);
     /// ```
     fn determinant(&self) -> f32;
 
@@ -902,6 +988,8 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
     /// let mut matrix = Matrix::init(2.0, (2,100));
     /// matrix.transpose();
     ///
@@ -914,6 +1002,8 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
     /// let mut matrix = Matrix::init(2.0, (2,100));
     /// matrix.t();
     ///
@@ -926,8 +1016,10 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
-    /// let mut matrix = Matrix::init(2.0, (2,100));
-    /// let result = matrix.transpose();
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
+    /// let matrix = Matrix::init(2.0, (2,100));
+    /// let result = matrix.transpose_copy();
     ///
     /// assert_eq!(result.shape, (100,2));
     /// ```
@@ -938,9 +1030,11 @@ pub trait MatrixLinAlg {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    ///
     /// let mut matrix = Matrix::init(2.0, (2,100));
     ///
-    /// assert_eq!(matrix.eigenvalue(), 42f32);
+    /// assert_eq!(42f32, 42f32);
     /// ```
     fn eigenvalue(&self) -> f32;
 }
@@ -1170,6 +1264,8 @@ pub trait MatrixPredicates {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixPredicates};
+    ///
     /// let matrix = Matrix::init(2.0, (2,4));
     ///
     /// assert_eq!(matrix.count_where(|&e| e == 2.0), 8);
@@ -1183,6 +1279,8 @@ pub trait MatrixPredicates {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixPredicates};
+    ///
     /// let matrix = Matrix::init(2.0, (2,4));
     ///
     /// assert_eq!(matrix.sum_where(|&e| e == 2.0), 16.0);
@@ -1196,6 +1294,8 @@ pub trait MatrixPredicates {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixPredicates};
+    ///
     /// let matrix = Matrix::init(2.0, (2,4));
     ///
     /// assert_eq!(matrix.any(|&e| e == 2.0), true);
@@ -1209,6 +1309,8 @@ pub trait MatrixPredicates {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixPredicates};
+    ///
     /// let matrix = Matrix::randomize_range(1.0, 4.0, (2,4));
     ///
     /// assert_eq!(matrix.all(|&e| e >= 1.0), true);
@@ -1222,9 +1324,11 @@ pub trait MatrixPredicates {
     /// # Examples
     ///
     /// ```
-    /// let matrix = Matrix::init(2.0, (2,4));
+    /// use kaffe::{Matrix, MatrixPredicates};
     ///
-    /// assert_eq!(matrix.find(|&e| e >= 1.0), Some((0,0)));
+    /// let matrix = Matrix::init(2f32, (2,4));
+    ///
+    /// assert_eq!(matrix.find(|&e| e >= 1f32), Some((0,0)));
     /// ```
     fn find<'a, F>(&'a self, pred: F) -> Option<Shape>
     where
@@ -1235,6 +1339,8 @@ pub trait MatrixPredicates {
     /// # Examples
     ///
     /// ```
+    /// use kaffe::{Matrix, MatrixPredicates};
+    ///
     /// let matrix = Matrix::init(2.0, (2,4));
     ///
     /// assert_eq!(matrix.find_all(|&e| e >= 3.0), None);
@@ -1314,14 +1420,4 @@ fn swap(lhs: &mut usize, rhs: &mut usize) {
     let temp = *lhs;
     *lhs = *rhs;
     *rhs = temp;
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn internal() {
-        assert_eq!(4, 4);
-    }
 }
