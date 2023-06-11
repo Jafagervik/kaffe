@@ -904,6 +904,38 @@ pub trait MatrixLinAlg {
     /// ```
     fn log(&self, base: f32) -> Self;
 
+    /// Takes the natural logarithm of each element in a matrix
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    /// use kaffe::constants::E;
+    ///
+    /// let matrix = Matrix::init(E, (2,2));
+    ///
+    /// let result_mat = matrix.ln();
+    ///
+    /// assert_eq!(result_mat.shape, (2,2));
+    /// ```
+    fn ln(&self) -> Self;
+
+    /// Gets tanh of every value
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::{Matrix, MatrixLinAlg};
+    /// use kaffe::constants::E;
+    ///
+    /// let matrix = Matrix::init(E, (2,2));
+    ///
+    /// let result_mat = matrix.tanh();
+    ///
+    /// assert_eq!(result_mat.shape, (2,2));
+    /// ```
+    fn tanh(&self) -> Self;
+
     /// Pows each value in a matrix by val times
     ///
     /// # Examples
@@ -1254,6 +1286,19 @@ impl MatrixLinAlg for Matrix {
 
         Self::new(data, self.shape)
     }
+
+    fn ln(&self) -> Self {
+        let data: Vec<f32> = self.data.par_iter().map(|&e| e.ln()).collect();
+
+        Self::new(data, self.shape)
+    }
+
+    fn tanh(&self) -> Self {
+        let data: Vec<f32> = self.data.par_iter().map(|&e| e.tanh()).collect();
+
+        Self::new(data, self.shape)
+    }
+
     fn pow(&self, val: i32) -> Self {
         let data: Vec<f32> = self.data.par_iter().map(|&e| e.powi(val)).collect();
 

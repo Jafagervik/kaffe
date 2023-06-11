@@ -9,11 +9,10 @@ use crate::{Matrix, MatrixLinAlg, MatrixPredicates};
 ///
 /// ```
 /// use kaffe::{Matrix, MatrixLinAlg};
-/// use kaffe::nn::losses::CEntroypyLoss;
+/// use kaffe::nn::loss::CEntroypyLoss;
 ///
 /// let m1 = Matrix::init(2.0, (2,2));
 /// let m2 = Matrix::init(4.0, (2,2));
-///
 /// ```
 pub fn BCEntroypyLoss(y: &Matrix, y_hat: &Matrix) -> f32 {
     todo!()
@@ -25,11 +24,10 @@ pub fn BCEntroypyLoss(y: &Matrix, y_hat: &Matrix) -> f32 {
 ///
 /// ```
 /// use kaffe::{Matrix, MatrixLinAlg};
-/// use kaffe::nn::losses::CEntroypyLoss;
+/// use kaffe::nn::loss::CEntroypyLoss;
 ///
 /// let m1 = Matrix::init(2.0, (2,2));
 /// let m2 = Matrix::init(4.0, (2,2));
-///
 /// ```
 pub fn CEntroypyLoss(y: &Matrix, y_hat: &Matrix) -> f32 {
     todo!()
@@ -43,7 +41,7 @@ pub fn CEntroypyLoss(y: &Matrix, y_hat: &Matrix) -> f32 {
 ///
 /// ```
 /// use kaffe::{Matrix, MatrixLinAlg};
-/// use kaffe::nn::losses::L1Loss;
+/// use kaffe::nn::loss::L1Loss;
 ///
 /// let m1 = Matrix::init(2.0, (2,2));
 /// let m2 = Matrix::init(4.0, (2,2));
@@ -62,7 +60,7 @@ pub fn L1Loss(y: &Matrix, y_hat: &Matrix) -> f32 {
 ///
 /// ```
 /// use kaffe::{Matrix, MatrixLinAlg};
-/// use kaffe::nn::losses::L2Loss;
+/// use kaffe::nn::loss::L2Loss;
 ///
 /// let m1 = Matrix::init(3.0, (2,2));
 /// let m2 = Matrix::init(2.0, (2,2));

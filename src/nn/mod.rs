@@ -4,13 +4,13 @@
 //! Should be kept as simple as possible to avoid confusion,
 //! and if people want to make their own versions
 //! of optimizers, losses, and so on; that should be supported
-pub mod activations;
-pub mod losses;
-pub mod optimizers;
+pub mod activation;
+pub mod loss;
+pub mod optimizer;
 pub mod pooling;
 
 use crate::matrix::{Matrix, MatrixLinAlg, Shape};
-use activations::*;
+//use activation::*;
 
 /// struct Layer represents a layer in our net
 pub struct Layer {}
