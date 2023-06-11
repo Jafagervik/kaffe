@@ -4,11 +4,12 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Joergen Aleksander Fagervik <jorgenafagervik@gmail.com>"]
 license = "MIT OR Apache-2.0"
+readme = "README.md"
 
 description = "Pytorch, but make it rust :)"
 repository = "https://github.com/Jafagervik/latte.git"
 
-keywords = ["ai","matrix", "linear algebra", "tensorflow", "pytorch", "numpy"]
+keywords = ["ai","matrix", "tensorflow", "pytorch", "numpy"]
 categories = ["matrix", "ai"]
 
 
