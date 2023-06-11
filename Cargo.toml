@@ -1,6 +1,6 @@
 [package]
 name = "kaffe"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 authors = ["Joergen Aleksander Fagervik <jorgenafagervik@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -24,4 +24,9 @@ criterion = "0.5.1"
 
 [[bench]]
 name = "matmul_benchmark"
+harness = false
+
+
+[[bench]]
+name = "matrix_ops_benches"
 harness = false
