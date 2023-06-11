@@ -10,6 +10,7 @@ pub mod dataset;
 pub mod loss;
 pub mod optimizer;
 pub mod pooling;
+pub mod transform;
 
 use crate::matrix::{Matrix, MatrixLinAlg, Shape};
 //use activation::*;
