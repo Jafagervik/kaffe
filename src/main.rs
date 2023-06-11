@@ -1,12 +1,15 @@
+#![warn(missing_docs)]
+//! Executable for testing
 mod matrix;
 mod nn;
 
 use matrix::Matrix;
-use matrix::MatrixOps;
+use matrix::MatrixLinAlg;
 use matrix::MatrixPredicates;
 
 use nn::*;
 
+/// Entry point
 fn main() {
     let u = Matrix::init(2f32, (2, 2));
     let v = Matrix::init(3f32, (2, 2));
@@ -15,8 +18,6 @@ fn main() {
 
     let mat = Matrix::default();
     mat.print();
-
-    test();
 
     let a = Matrix::eye(3);
     let iff = a.any(|&e| e == 1.0);

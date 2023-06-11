@@ -1,9 +1,16 @@
 [package]
 name = "latte"
-version = "0.2.0"
+version = "0.0.1"
 edition = "2021"
+authors = ["Joergen Aleksander Fagervik <jorgenafagervik@gmail.com>"]
+license = "MIT OR Apache-2.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Pytorch, but make it rust :)"
+repository = "https://github.com/Jafagervik/latte.git"
+
+keywords = ["ai","matrix", "linear algebra", "tensorflow", "pytorch", "numpy"]
+categories = ["matrix", "linear algebra", "ai"]
+
 
 [dependencies]
 anyhow = "1.0.71"
@@ -14,5 +21,5 @@ rayon = "1.7.0"
 [dev-dependencies]
 
 [lib]
-name = "yeet"
+name = "latte"
 path = "src/lib.rs"

@@ -1,3 +1,6 @@
+//! First time writing docs for my code, please be nice
+#![warn(missing_docs)]
+
 mod determinant_helpers;
 
 use determinant_helpers::*;
@@ -9,7 +12,7 @@ use std::{
     str::FromStr,
 };
 
-// Type definitions
+/// Type definitions
 pub type Shape = (usize, usize);
 
 /// calculates index for matrix
@@ -22,8 +25,10 @@ macro_rules! at {
 /// Represents all data we want to get
 #[derive(Clone)]
 pub struct Matrix {
-    data: Vec<f32>,
-    shape: Shape,
+    /// Data contained inside the matrix with f32 values
+    pub data: Vec<f32>,
+    /// Shape of matrix, (rows, cols)
+    pub shape: Shape,
 }
 
 impl Debug for Matrix {
@@ -72,8 +77,9 @@ impl FromStr for Matrix {
     }
 }
 
-/// Pretty printing
+/// Printer functions for the matrix
 impl Matrix {
+    /// Prints out the matrix based on shape. Also outputs datatype
     pub fn print(&self) {
         print!("[");
 
@@ -102,11 +108,17 @@ impl Matrix {
 
 /// Implementations of all creatins of matrices
 impl Matrix {
+    /// Creates a new matrix from a vector and the shape you want.
+    /// Will default init if it does not work
     pub fn new(data: Vec<f32>, shape: Shape) -> Self {
+        if shape.0 * shape.1 != data.len() {
+            return Self::default();
+        }
+
         Self { data, shape }
     }
 
-    /// represents a default identity matrix
+    /// Represents a default identity matrix
     pub fn default() -> Self {
         Self {
             data: vec![0f32; 9],
@@ -187,6 +199,11 @@ impl Matrix {
         Self::randomize_range(-1f32, 1f32, shape)
     }
 
+    /// Parses from file, but will return a default matrix if nothing is given
+    pub fn from_file(path: &'static str) -> Self {
+        path.parse::<Self>().unwrap_or_else(|_| Self::default())
+    }
+
     /// HELPER, name is too retarded for public usecases
     fn from_shape(value: f32, shape: Shape) -> Self {
         let (rows, cols) = shape;
@@ -199,8 +216,11 @@ impl Matrix {
     }
 }
 
+/// Enum for specifying which dimension / axis to work with
 pub enum Dimension {
+    /// Row is defined as 0
     Row = 0,
+    /// Col is defined as 1
     Col = 1,
 }
 
@@ -209,6 +229,16 @@ impl Matrix {
     /// Converts matrix to a tensor
     pub fn to_tensor(&self) {
         todo!()
+    }
+
+    /// Reshapes a matrix if possible.
+    /// If the shapes don't match up, the old shape will be retained
+    pub fn reshape(&mut self, new_shape: Shape) {
+        if new_shape.0 * new_shape.1 != self.size() {
+            println!("Can not reshape.. Keeping old dimensions for now");
+        }
+
+        self.shape = new_shape;
     }
 
     /// Get number of columns in the matrix
@@ -221,7 +251,7 @@ impl Matrix {
         self.shape.0
     }
 
-    /// Total size
+    /// Total size of matrix
     pub fn size(&self) -> usize {
         self.shape.0 * self.shape.1
     }
@@ -231,8 +261,7 @@ impl Matrix {
         self.data[at!(i, j, self.cols())]
     }
 
-    /// calculates 2-index for matrix
-    /// TODO: Convert to macro
+    /// Calculates the (row, col) for a matrix by a single index
     fn inverse_at(&self, idx: usize) -> Shape {
         let mut idx = idx;
 
@@ -342,23 +371,120 @@ impl Matrix {
             }
         }
     }
+
+    /// Sums up all elements in matrix
+    pub fn cumsum(&self) -> f32 {
+        self.data.par_iter().sum()
+    }
+
+    /// Sums up all elements in matrix
+    pub fn cumprod(&self) -> f32 {
+        self.data.par_iter().product()
+    }
+
+    /// Sums up elements over given dimension and axis
+    pub fn sum(&self, rowcol: usize, dimension: Dimension) -> f32 {
+        match dimension {
+            Dimension::Row => self
+                .data
+                .par_iter()
+                .skip(rowcol * self.cols())
+                .step_by(rowcol)
+                .sum(),
+            Dimension::Col => self.data.par_iter().skip(rowcol).step_by(self.cols()).sum(),
+        }
+    }
+
+    /// Prods up elements over given rowcol and dimension
+    pub fn prod(&self, rowcol: usize, dimension: Dimension) -> f32 {
+        match dimension {
+            Dimension::Row => self
+                .data
+                .par_iter()
+                .skip(rowcol * self.cols())
+                .step_by(rowcol)
+                .product(),
+            Dimension::Col => self
+                .data
+                .par_iter()
+                .skip(rowcol)
+                .step_by(self.cols())
+                .product(),
+        }
+    }
 }
 
-/// Other identities on matrices
-pub trait MatrixOps {
+/// trait MatrixLinAlg contains all common Linear Algebra functions to be
+/// performed on matrices
+pub trait MatrixLinAlg {
+    /// Adds one matrix to another
     fn add(&self, other: &Self) -> Self;
+
+    /// Subtracts one array from another
     fn sub(&self, other: &Self) -> Self;
+
+    /// Dot product of two matrices
     fn mul(&self, other: &Self) -> Self;
+
+    /// Bad handling of zero div
     fn div(&self, other: &Self) -> Self;
+
+    /// Adds a value to a matrix and returns a new matrix
+    fn add_val(&self, val: f32) -> Self;
+
+    /// Substracts a value to a matrix and returns a new matrix
+    fn sub_val(&self, val: f32) -> Self;
+
+    /// Multiplies a value to a matrix and returns a new matrix
+    fn mul_val(&self, val: f32) -> Self;
+
+    /// Divides a value to a matrix and returns a new matrix
+    fn div_val(&self, val: f32) -> Self;
+
+    /// Adds a matrix in-place to a matrix
+    fn add_self(&mut self, other: &Self);
+
+    /// Subtracts a matrix in-place to a matrix
+    fn sub_self(&mut self, other: &Self);
+
+    /// Multiplies a matrix in-place to a matrix
+    fn mul_self(&mut self, other: &Self);
+
+    /// Divides a matrix in-place to a matrix
+    fn div_self(&mut self, other: &Self);
+
+    /// Adds a value in-place to a matrix
+    fn add_val_self(&mut self, val: f32);
+
+    /// Subtracts a value in-place to a matrix
+    fn sub_val_self(&mut self, val: f32);
+
+    /// Mults a value in-place to a matrix
+    fn mul_val_self(&mut self, val: f32);
+
+    /// Divs a value in-place to a matrix
+    fn div_val_self(&mut self, val: f32);
+
+    /// Transposed matrix multiplications
     fn matmul(&self, other: &Self) -> Self;
+
+    /// Find the determinant of a matrix
     fn determinant(&self) -> f32;
+
+    /// Transpose a matrix in-place
     fn transpose(&mut self);
-    fn T(&mut self);
+
+    /// Shorthand call for transpose
+    fn t(&mut self);
+
+    /// Transpose a matrix and return a copy
     fn transpose_copy(&self) -> Self;
-    fn eigenvalue(&self) -> Self;
+
+    /// Find the eigenvale of a matrix
+    fn eigenvalue(&self) -> f32;
 }
 
-impl MatrixOps for Matrix {
+impl MatrixLinAlg for Matrix {
     fn add(&self, other: &Self) -> Self {
         if self.rows() != other.rows() || self.cols() != other.cols() {
             panic!("NOOO!");
@@ -393,7 +519,6 @@ impl MatrixOps for Matrix {
         mat
     }
 
-    /// Dot product of two matrices
     fn mul(&self, other: &Self) -> Self {
         if self.rows() != other.rows() || self.cols() != other.cols() {
             panic!("NOOO!");
@@ -411,7 +536,6 @@ impl MatrixOps for Matrix {
         mat
     }
 
-    /// Bad handling of zero div
     fn div(&self, other: &Self) -> Self {
         if self.rows() != other.rows() || self.cols() != other.cols() {
             panic!("NOOO!");
@@ -434,7 +558,74 @@ impl MatrixOps for Matrix {
         mat
     }
 
-    /// Transposed Matrix multiplication
+    fn add_val(&self, val: f32) -> Self {
+        let data: Vec<f32> = self.data.par_iter().map(|&e| e + val).collect();
+
+        Self::new(data, self.shape)
+    }
+
+    fn sub_val(&self, val: f32) -> Self {
+        let data: Vec<f32> = self.data.par_iter().map(|&e| e - val).collect();
+
+        Self::new(data, self.shape)
+    }
+
+    fn mul_val(&self, val: f32) -> Self {
+        let data: Vec<f32> = self.data.par_iter().map(|&e| e * val).collect();
+
+        Self::new(data, self.shape)
+    }
+
+    fn div_val(&self, val: f32) -> Self {
+        let data: Vec<f32> = self.data.par_iter().map(|&e| e / val).collect();
+
+        Self::new(data, self.shape)
+    }
+
+    fn add_self(&mut self, other: &Self) {
+        self.data
+            .par_iter_mut()
+            .zip(&other.data)
+            .for_each(|(a, b)| *a += b);
+    }
+
+    fn sub_self(&mut self, other: &Self) {
+        self.data
+            .par_iter_mut()
+            .zip(&other.data)
+            .for_each(|(a, b)| *a -= b);
+    }
+
+    fn mul_self(&mut self, other: &Self) {
+        self.data
+            .par_iter_mut()
+            .zip(&other.data)
+            .for_each(|(a, b)| *a *= b);
+    }
+
+    fn div_self(&mut self, other: &Self) {
+        self.data
+            .par_iter_mut()
+            .zip(&other.data)
+            .for_each(|(a, b)| *a /= b);
+    }
+
+    fn add_val_self(&mut self, val: f32) {
+        self.data.par_iter_mut().for_each(|e| *e += val);
+    }
+
+    fn sub_val_self(&mut self, val: f32) {
+        self.data.par_iter_mut().for_each(|e| *e -= val);
+    }
+
+    fn mul_val_self(&mut self, val: f32) {
+        self.data.par_iter_mut().for_each(|e| *e *= val);
+    }
+
+    fn div_val_self(&mut self, val: f32) {
+        self.data.par_iter_mut().for_each(|e| *e /= val);
+    }
+
     fn matmul(&self, other: &Self) -> Self {
         // assert M N x N P
         if self.cols() != other.rows() {
@@ -445,7 +636,6 @@ impl MatrixOps for Matrix {
         let c1 = self.cols();
         let c2 = other.cols();
 
-        // let mut res = Self::from_shape(0f32, (c2, r1));
         let mut data = vec![0f32; c2 * r1];
 
         let t_other = other.transpose_copy();
@@ -464,7 +654,6 @@ impl MatrixOps for Matrix {
         Self::new(data, (c2, r1))
     }
 
-    /// Jacobian determinant - needs helpers
     fn determinant(&self) -> f32 {
         match self.size() {
             1 => self.data[0],
@@ -486,7 +675,6 @@ impl MatrixOps for Matrix {
         }
     }
 
-    /// Transposes a matrix in place
     fn transpose(&mut self) {
         for i in 0..self.rows() {
             for j in (i + 1)..self.cols() {
@@ -499,44 +687,49 @@ impl MatrixOps for Matrix {
         swap(&mut self.shape.0, &mut self.shape.1);
     }
 
-    fn T(&mut self) {
+    fn t(&mut self) {
         self.transpose()
     }
 
-    /// Transpose into new matrix
     fn transpose_copy(&self) -> Matrix {
         let mut res = self.clone();
         res.transpose();
         res
     }
 
-    fn eigenvalue(&self) -> Self {
+    fn eigenvalue(&self) -> f32 {
         todo!()
     }
 }
 
 /// Matrix functions with predicates
 pub trait MatrixPredicates {
+    /// Counts all occurances where predicate holds
     fn count_where<'a, F>(&'a self, pred: F) -> usize
     where
         F: Fn(&'a f32) -> bool + 'static;
 
+    /// Sums all occurances where predicate holds
     fn sum_where<'a, F>(&'a self, pred: F) -> f32
     where
         F: Fn(&'a f32) -> bool + 'static;
 
+    /// Return whether or not a predicate holds at least once
     fn any<'a, F>(&'a self, pred: F) -> bool
     where
         F: Fn(&'a f32) -> bool + 'static;
 
+    /// Returns whether or not predicate holds for all values
     fn all<'a, F>(&'a self, pred: F) -> bool
     where
         F: Fn(&'a f32) -> bool + 'static;
 
+    /// Finds first index where predicates holds if possible
     fn find<'a, F>(&'a self, pred: F) -> Option<Shape>
     where
         F: Fn(&'a f32) -> bool + 'static;
 
+    /// Finds all indeces where predicates holds if possible
     fn find_all<'a, F>(&'a self, pred: F) -> Option<Vec<Shape>>
     where
         F: Fn(&'a f32) -> bool + 'static;
@@ -600,20 +793,16 @@ impl MatrixPredicates for Matrix {
             .collect();
 
         if data.is_empty() {
-            return None;
+            None
+        } else {
+            Some(data)
         }
-
-        Some(data)
     }
 }
 
+/// Helper method to swap to usizes
 fn swap(lhs: &mut usize, rhs: &mut usize) {
     let temp = *lhs;
     *lhs = *rhs;
     *rhs = temp;
-}
-
-#[test]
-fn test_all() {
-    unimplemented!();
 }
