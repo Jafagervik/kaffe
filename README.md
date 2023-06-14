@@ -144,13 +144,9 @@ Full API documentation can be found [here](https://docs.rs/kaffe/latest/kaffe/).
 
 ## Features 
 - [X] Blazingly fast
-- [X] Common matrix operations exists under matrix module
+- [X] Common tensor operations exists under tensor  module
 - [X] Optimizers 
+- [X] Support for both f32 and f64 
 - [X] ReLU, GeLU, PReLU, Sigmoid 
 - [ ] Basic neural net features
 
-### Version Control 
-
-- Breaking changes: X.0.0
-- New features: X.X+1.0
-- Adjustments/Fixes: X.X.X+1

@@ -1,4 +1,6 @@
 //! Module for defining and implementing dataloaders
+#![warn(missing_docs)]
+
 use crate::nn::dataset::DataSet;
 
 /// Dataloader represents A iterator basically

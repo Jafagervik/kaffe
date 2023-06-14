@@ -3,8 +3,11 @@
 //! Sigmoid and variants of ReLU are for now the ones implemented
 #![warn(missing_docs)]
 
+use std::error::Error;
+use std::str::FromStr;
+
 use crate::constants::{E, PI};
-use crate::{Tensor, TensorLinAlg, TensorOps};
+use crate::{Tensor, TensorElement, E64};
 use rayon::prelude::*;
 
 /// ReLU is the most used activation funcion besides Sigmoid
@@ -12,21 +15,26 @@ use rayon::prelude::*;
 /// # Examples
 ///
 /// ```
-/// use kaffe::{Tensor, TensorLinAlg};
+/// use kaffe::Tensor;
 /// use kaffe::nn::activation::ReLU;
 ///
-/// let matrix = Tensor::new(vec![-1.0, -2.0, 1.0, 2.0], (2,2));
+/// let matrix = Tensor::new(vec![-1.0, -2.0, 1.0, 2.0], vec![2,2]);
 ///
 /// assert_eq!(ReLU(&matrix).data, vec![0.0, 0.0, 1.0, 2.0]);
 /// ```
-pub fn ReLU(x: &Tensor) -> Tensor {
-    let data: Vec<f32> = x
+pub fn ReLU<'a, 'b, T>(x: &Tensor<'b, T>) -> Tensor<'b, T>
+where
+    T: TensorElement,
+    <T as FromStr>::Err: Error,
+    Vec<T>: FromParallelIterator<T>,
+{
+    let data: Vec<T> = x
         .data
         .par_iter()
-        .map(|&e| if e >= 0.0 { e } else { 0.0 })
+        .map(|&e| if e >= T::zero() { e } else { T::zero() })
         .collect();
 
-    Tensor::new(data, x.shape)
+    Tensor::new(data, x.shape.clone()).unwrap()
 }
 
 /// PReLU is a slight modification to ReLU
@@ -34,21 +42,26 @@ pub fn ReLU(x: &Tensor) -> Tensor {
 /// # Examples
 ///
 /// ```
-/// use kaffe::{Tensor, TensorLinAlg};
+/// use kaffe::Tensor;
 /// use kaffe::nn::activation::PReLU;
 ///
-/// let matrix = Tensor::new(vec![-1.0, -2.0, 1.0, 2.0], (2,2));
+/// let matrix = Tensor::new(vec![-1.0, -2.0, 1.0, 2.0], vec![2,2]);
 ///
 /// assert_eq!(PReLU(&matrix, -1.0).data, vec![1.0, 2.0, 1.0, 2.0]);
 /// ```
-pub fn PReLU(x: &Tensor, alpha: f32) -> Tensor {
-    let data: Vec<f32> = x
+pub fn PReLU<'a, 'b, T>(x: &Tensor<'a, T>, alpha: T) -> Tensor<'b, T>
+where
+    T: TensorElement,
+    <T as FromStr>::Err: Error,
+    Vec<T>: FromParallelIterator<T>,
+{
+    let data: Vec<T> = x
         .data
         .par_iter()
-        .map(|&e| if e >= 0.0 { e } else { e * alpha })
+        .map(|&e| if e >= T::zero() { e } else { e * alpha })
         .collect();
 
-    Tensor::new(data, x.shape)
+    Tensor::new(data, x.shape.clone()).unwrap()
 }
 
 /// Sigmoid function
@@ -56,21 +69,26 @@ pub fn PReLU(x: &Tensor, alpha: f32) -> Tensor {
 /// # Examples
 ///
 /// ```
-/// use kaffe::{Tensor, TensorLinAlg};
+/// use kaffe::Tensor;
 /// use kaffe::nn::activation::Sigmoid;
 ///
-/// let matrix = Tensor::new(vec![1.0, 2.0, 1.0, 2.0], (2,2));
+/// let matrix = Tensor::new(vec![1.0, 2.0, 1.0, 2.0], vec![2,2]);
 ///
 /// // assert_eq!(Sigmoid(&matrix).data, vec![1.0, 2.0, 1.0, 2.0]);
 /// ```
-pub fn Sigmoid(x: &Tensor) -> Tensor {
-    let data: Vec<f32> = x
+pub fn Sigmoid<'a, T>(x: &Tensor<'a, T>) -> Tensor<'a, T>
+where
+    T: TensorElement,
+    <T as FromStr>::Err: Error,
+    Vec<T>: FromParallelIterator<T>,
+{
+    let data: Vec<T> = x
         .data
         .par_iter()
-        .map(|&e| E.powf(e) / (E.powf(e) + 1f32))
+        .map(|&e| T::from(E).unwrap().powf(e) / (T::from(E).unwrap().powf(e) + T::one()))
         .collect();
 
-    Tensor::new(data, x.shape)
+    Tensor::new(data, x.shape.clone()).unwrap()
 }
 
 /// GeLU activation function
@@ -83,20 +101,25 @@ pub fn Sigmoid(x: &Tensor) -> Tensor {
 /// use kaffe::{Tensor, TensorLinAlg};
 /// use kaffe::nn::activation::GeLU;
 ///
-/// let matrix = Tensor::new(vec![1.0, 2.0, 1.0, 2.0], (2,2));
+/// let matrix = Tensor::new(vec![1.0, 2.0, 1.0, 2.0], vec![2,2]);
 ///
 /// // assert_eq!(GeLU(&matrix).data, vec![1.0, 2.0, 1.0, 2.0]);
 /// ```
-pub fn GeLU(x: &Tensor) -> Tensor {
-    let lhs = x.mul_val(0.5);
+pub fn GeLU<'a, T>(x: &Tensor<'a, T>) -> Tensor<'a, T>
+where
+    T: TensorElement,
+    <T as FromStr>::Err: Error,
+{
+    let lhs = x.mul_val(T::from(0.5).unwrap());
 
     let inner = x
         .pow(3)
-        .mul_val(0.044715)
+        .mul_val(T::from(0.044715).unwrap())
         .add(x)
-        .mul_val((2.0 / PI).sqrt() as f32);
+        .unwrap()
+        .mul_val((T::from(2).unwrap() / T::from(PI).unwrap()).sqrt());
 
-    let result = lhs.mul(&inner.tanh().add_val(1.0));
+    let result = lhs.mul(&inner.tanh().add_val(T::from(1).unwrap())).unwrap();
 
     return result;
 }

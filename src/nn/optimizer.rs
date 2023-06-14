@@ -1,18 +1,24 @@
 //! Common optimizers for neural networks
 #![warn(missing_docs)]
 
-use crate::{Tensor, TensorLinAlg};
+use std::{error::Error, str::FromStr};
+
+use crate::{Tensor, TensorElement};
 use rayon::prelude::*;
 
 /// Trait contains all the functions needed to run an optimizer
-pub trait Optimizer {
+pub trait Optimizer<'a, T>
+where
+    T: TensorElement,
+    <T as FromStr>::Err: Error,
+{
     /// Initializes a new optimizer
     fn init(learning_rate: f32, momentum: f32) -> Self;
 
     /// Function that minimizes based on cost function
-    fn minimize<F>(&mut self, cost: F, vars: &mut Vec<f32>)
+    fn minimize<F>(&mut self, cost: F, vars: &mut Vec<T>)
     where
-        F: Fn(&Tensor, &Tensor) -> f32;
+        F: Fn(&Tensor<'a, T>, &Tensor<'a, T>) -> T;
 }
 
 /// Adam Optimizer
@@ -20,9 +26,9 @@ pub trait Optimizer {
 /// # Examples
 ///
 /// ```
-/// use kaffe::{Tensor, TensorLinAlg};
+/// use kaffe::Tensor;
 /// use kaffe::nn::optimizer::Adam;
-/// use crate::kaffe::nn::optimizer::Optimizer;
+/// use kaffe::nn::optimizer::Optimizer;
 ///
 /// let optim = Adam::init(1e-6, 0.8);
 ///
@@ -46,7 +52,11 @@ pub struct Adam {
     v_db: f32,
 }
 
-impl Optimizer for Adam {
+impl<'a, T> Optimizer<'a, T> for Adam
+where
+    T: TensorElement,
+    <T as FromStr>::Err: Error,
+{
     fn init(learning_rate: f32, momentum: f32) -> Self {
         Self {
             lr: learning_rate,
@@ -62,11 +72,11 @@ impl Optimizer for Adam {
         }
     }
 
-    fn minimize<F>(&mut self, cost: F, vars: &mut Vec<f32>)
+    fn minimize<F>(&mut self, cost: F, vars: &mut Vec<T>)
     where
-        F: Fn(&Tensor, &Tensor) -> f32,
+        F: Fn(&Tensor<'a, T>, &Tensor<'a, T>) -> T,
     {
-        todo!()
+        unimplemented!()
     }
 }
 
@@ -75,7 +85,7 @@ impl Optimizer for Adam {
 /// # Examples
 ///
 /// ```
-/// use kaffe::{Tensor, TensorLinAlg};
+/// use kaffe::Tensor;
 /// use kaffe::nn::optimizer::SGD;
 /// use crate::kaffe::nn::optimizer::Optimizer;
 ///
@@ -91,7 +101,11 @@ pub struct SGD {
     decay_rate: f32,
 }
 
-impl Optimizer for SGD {
+impl<'a, T> Optimizer<'a, T> for SGD
+where
+    T: TensorElement,
+    <T as FromStr>::Err: Error,
+{
     fn init(learning_rate: f32, momentum: f32) -> Self {
         Self {
             lr: learning_rate,
@@ -100,9 +114,9 @@ impl Optimizer for SGD {
         }
     }
 
-    fn minimize<F>(&mut self, cost: F, vars: &mut Vec<f32>)
+    fn minimize<F>(&mut self, cost: F, vars: &mut Vec<T>)
     where
-        F: Fn(&Tensor, &Tensor) -> f32,
+        F: Fn(&Tensor<'a, T>, &Tensor<'a, T>) -> T,
     {
         todo!()
     }

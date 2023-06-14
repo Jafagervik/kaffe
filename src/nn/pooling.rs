@@ -1,6 +1,8 @@
 //!  Pooling
 #![warn(missing_docs)]
-use crate::{Tensor, TensorLinAlg};
+use std::{error::Error, str::FromStr};
+
+use crate::{Tensor, TensorElement};
 use rayon::prelude::*;
 
 /// Max Pooling
@@ -8,18 +10,22 @@ use rayon::prelude::*;
 /// # Examples
 ///
 /// ```
-/// use kaffe::{Tensor, TensorLinAlg};
+/// use kaffe::Tensor;
 /// use kaffe::nn::pooling::MaxPool;
 ///
-/// let matrix = Tensor::init(2.0, (4,4));
+/// let matrix = Tensor::init(2.0, vec![4,4]);
 ///
 /// let res = MaxPool(&matrix, 2, 0);
 ///
-/// assert_eq!(res.shape, (2,2));
+/// assert_eq!(res.shape, vec![2,2]);
 ///
 /// ```
-pub fn MaxPool(x: &Tensor, stride: usize, padding: usize) -> Tensor {
-    let pred = |slice: &[f32]| {
+pub fn MaxPool<'a, T>(x: &Tensor<'a, T>, stride: usize, padding: usize) -> Tensor<'a, T>
+where
+    T: TensorElement,
+    <T as FromStr>::Err: Error,
+{
+    let pred = |slice: &[T]| {
         slice
             .par_iter()
             .cloned()
@@ -34,19 +40,23 @@ pub fn MaxPool(x: &Tensor, stride: usize, padding: usize) -> Tensor {
 /// # Examples
 ///
 /// ```
-/// use kaffe::{Tensor, TensorLinAlg};
+/// use kaffe::Tensor;
 /// use kaffe::nn::pooling::MinPool;
 ///
-/// let matrix = Tensor::init(2.0, (4,4));
+/// let matrix = Tensor::init(2.0, vec![4,4]);
 ///
 /// let res = MinPool(&matrix, 2, 0);
 ///
-/// assert_eq!(res.shape, (2,2));
-/// assert_eq!(res.get(1,1), 2.0);
+/// assert_eq!(res.shape, vec![2,2]);
+/// assert_eq!(res.get(vec![1,1]), 2.0);
 ///
 /// ```
-pub fn MinPool(x: &Tensor, stride: usize, padding: usize) -> Tensor {
-    let pred = |slice: &[f32]| {
+pub fn MinPool<'a, T>(x: &Tensor<'a, T>, stride: usize, padding: usize) -> Tensor<'a, T>
+where
+    T: TensorElement,
+    <T as FromStr>::Err: Error,
+{
+    let pred = |slice: &[T]| {
         slice
             .par_iter()
             .cloned()
@@ -61,28 +71,35 @@ pub fn MinPool(x: &Tensor, stride: usize, padding: usize) -> Tensor {
 /// # Examples
 ///
 /// ```
-/// use kaffe::{Tensor, TensorLinAlg};
+/// use kaffe::Tensor;
 /// use kaffe::nn::pooling::AvgPool;
 ///
-/// let matrix = Tensor::init(2.0, (4,4));
+/// let matrix = Tensor::init(2.0, vec![4,4]);
 ///
 /// let res = AvgPool(&matrix, 2, 0);
 ///
-/// assert_eq!(res.shape, (2,2));
-/// //assert_eq!(res.get(0,0), 2.0);
+/// assert_eq!(res.shape, vec![2,2]);
+/// //assert_eq!(res.get(vec![0,0]), 2.0);
 ///
 /// ```
-pub fn AvgPool(x: &Tensor, stride: usize, padding: usize) -> Tensor {
-    let pred = |slice: &[f32]| Some(slice.par_iter().cloned().sum::<f32>() / slice.len() as f32);
+pub fn AvgPool<'a, T>(x: &Tensor<'a, T>, stride: usize, padding: usize) -> Tensor<'a, T>
+where
+    T: TensorElement,
+    <T as FromStr>::Err: Error,
+{
+    let average =
+        |slice: &[T]| Some(slice.par_iter().cloned().sum::<T>() / T::from(slice.len()).unwrap());
 
-    pool(x, stride, padding, pred)
+    pool(x, stride, padding, average)
 }
 
 /// Internal Helper function that actually performs the
 /// predicates given, so pooling becomes easier
-fn pool<F>(x: &Tensor, stride: usize, padding: usize, mut pred: F) -> Tensor
+fn pool<'a, T, F>(x: &Tensor<'a, T>, stride: usize, padding: usize, mut pred: F) -> Tensor<'a, T>
 where
-    F: FnMut(&[f32]) -> Option<f32> + Send + Sync + 'static,
+    F: FnMut(&[T]) -> Option<T> + Send + Sync + 'static,
+    T: TensorElement,
+    <T as FromStr>::Err: Error,
 {
     // Calculate the dimensions of the resulting matrix
     let out_rows = ((x.shape.iter().nth_back(1).unwrap() + 2 * padding - stride) / stride) + 1;
@@ -98,11 +115,11 @@ where
             let start_col = j * stride;
 
             // Extract the slice from the original matrix
-            let slice = x.get_vec_slice(start_row, start_col, stride, stride);
+            let slice = x.get_vec_slice(vec![start_row, start_col], vec![stride, stride]);
 
             // Apply the predicate to the slice and get the result
             if let Some(value) = pred(&slice) {
-                pooled.set(i, j, value);
+                pooled.set(vec![i, j], value);
             }
         }
     }

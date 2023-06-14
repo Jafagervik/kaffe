@@ -301,8 +301,10 @@ dependencies = [
  "anyhow",
  "criterion",
  "itertools",
+ "num-traits",
  "rand",
  "rayon",
+ "serde",
 ]
 
 [[package]]
