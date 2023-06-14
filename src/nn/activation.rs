@@ -7,7 +7,7 @@ use std::error::Error;
 use std::str::FromStr;
 
 use crate::constants::{E, PI};
-use crate::{Tensor, TensorElement, E64};
+use crate::{Tensor, TensorElement};
 use rayon::prelude::*;
 
 /// ReLU is the most used activation funcion besides Sigmoid
@@ -18,11 +18,11 @@ use rayon::prelude::*;
 /// use kaffe::Tensor;
 /// use kaffe::nn::activation::ReLU;
 ///
-/// let matrix = Tensor::new(vec![-1.0, -2.0, 1.0, 2.0], vec![2,2]);
+/// let matrix = Tensor::new(vec![-1.0, -2.0, 1.0, 2.0], vec![2,2]).unwrap();
 ///
 /// assert_eq!(ReLU(&matrix).data, vec![0.0, 0.0, 1.0, 2.0]);
 /// ```
-pub fn ReLU<'a, 'b, T>(x: &Tensor<'b, T>) -> Tensor<'b, T>
+pub fn ReLU<'a, 'b, T>(x: &Tensor<'a, T>) -> Tensor<'b, T>
 where
     T: TensorElement,
     <T as FromStr>::Err: Error,
@@ -45,7 +45,7 @@ where
 /// use kaffe::Tensor;
 /// use kaffe::nn::activation::PReLU;
 ///
-/// let matrix = Tensor::new(vec![-1.0, -2.0, 1.0, 2.0], vec![2,2]);
+/// let matrix = Tensor::new(vec![-1.0, -2.0, 1.0, 2.0], vec![2,2]).unwrap();
 ///
 /// assert_eq!(PReLU(&matrix, -1.0).data, vec![1.0, 2.0, 1.0, 2.0]);
 /// ```
@@ -72,7 +72,7 @@ where
 /// use kaffe::Tensor;
 /// use kaffe::nn::activation::Sigmoid;
 ///
-/// let matrix = Tensor::new(vec![1.0, 2.0, 1.0, 2.0], vec![2,2]);
+/// let matrix = Tensor::new(vec![1.0, 2.0, 1.0, 2.0], vec![2,2]).unwrap();
 ///
 /// // assert_eq!(Sigmoid(&matrix).data, vec![1.0, 2.0, 1.0, 2.0]);
 /// ```
@@ -98,10 +98,10 @@ where
 /// # Examples
 ///
 /// ```
-/// use kaffe::{Tensor, TensorLinAlg};
+/// use kaffe::Tensor;
 /// use kaffe::nn::activation::GeLU;
 ///
-/// let matrix = Tensor::new(vec![1.0, 2.0, 1.0, 2.0], vec![2,2]);
+/// let matrix = Tensor::new(vec![1.0, 2.0, 1.0, 2.0], vec![2,2]).unwrap();
 ///
 /// // assert_eq!(GeLU(&matrix).data, vec![1.0, 2.0, 1.0, 2.0]);
 /// ```

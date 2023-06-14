@@ -1,7 +1,7 @@
 //! Common optimizers for neural networks
 #![warn(missing_docs)]
 
-use std::{error::Error, str::FromStr};
+use std::{error::Error, marker::PhantomData, str::FromStr};
 
 use crate::{Tensor, TensorElement};
 use rayon::prelude::*;
@@ -13,7 +13,7 @@ where
     <T as FromStr>::Err: Error,
 {
     /// Initializes a new optimizer
-    fn init(learning_rate: f32, momentum: f32) -> Self;
+    fn init(learning_rate: T, momentum: f32) -> Self;
 
     /// Function that minimizes based on cost function
     fn minimize<F>(&mut self, cost: F, vars: &mut Vec<T>)
@@ -33,9 +33,9 @@ where
 /// let optim = Adam::init(1e-6, 0.8);
 ///
 /// ```
-pub struct Adam {
+pub struct Adam<T> {
     /// Learning rate
-    lr: f32,
+    lr: T,
     /// Momentum
     momentum: f32,
     /// Decay rate
@@ -52,12 +52,12 @@ pub struct Adam {
     v_db: f32,
 }
 
-impl<'a, T> Optimizer<'a, T> for Adam
+impl<'a, T> Optimizer<'a, T> for Adam<T>
 where
     T: TensorElement,
     <T as FromStr>::Err: Error,
 {
-    fn init(learning_rate: f32, momentum: f32) -> Self {
+    fn init(learning_rate: T, momentum: f32) -> Self {
         Self {
             lr: learning_rate,
             momentum,
@@ -92,21 +92,21 @@ where
 /// let optim = SGD::init(1e-6, 0.8);
 ///
 /// ```
-pub struct SGD {
+pub struct SGD<T> {
     /// Learning rate
-    lr: f32,
+    lr: T,
     /// Momentum
     momentum: f32,
     /// Decay rate
     decay_rate: f32,
 }
 
-impl<'a, T> Optimizer<'a, T> for SGD
+impl<'a, T> Optimizer<'a, T> for SGD<T>
 where
     T: TensorElement,
     <T as FromStr>::Err: Error,
 {
-    fn init(learning_rate: f32, momentum: f32) -> Self {
+    fn init(learning_rate: T, momentum: f32) -> Self {
         Self {
             lr: learning_rate,
             momentum,

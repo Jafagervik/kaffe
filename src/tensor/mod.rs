@@ -41,6 +41,13 @@ fn swap(lhs: &mut usize, rhs: &mut usize) {
 //     Macros
 // ======================================
 
+/// Calculate 1D index from a 2D tensor
+macro_rules! at {
+    ($i:expr, $j:expr, $ncols:expr) => {
+        $i * $ncols + $j
+    };
+}
+
 /// Calculates 1D index from list of indexes
 macro_rules! index {
     ($indexes:expr, $dimensions:expr) => {{
@@ -152,6 +159,11 @@ where
     _lifetime: PhantomData<&'a T>,
 }
 
+/// TensorElement is a trait explaining
+/// all traits an item has to have.
+/// FOr now, these restrictions make it so
+/// only f32s and f64s are supported,
+/// and for AI, this is mostly ok
 pub trait TensorElement:
     Copy
     + Clone
@@ -255,7 +267,7 @@ where
     Vec<T>: IntoParallelIterator,
     Vec<&'a T>: IntoParallelRefIterator<'a>,
 {
-    /// Represents a default identity tensor
+    /// Represents a default 3x3 2D identity tensor
     ///
     /// # Examples
     ///
@@ -267,12 +279,7 @@ where
     /// assert_eq!(tensor.size(), 9);
     /// ```
     fn default() -> Self {
-        Self {
-            data: Vec::new(),
-            ndims: 1,
-            shape: Vec::new(),
-            _lifetime: PhantomData::default(),
-        }
+        Self::eye(3)
     }
 }
 
@@ -292,7 +299,7 @@ where
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let tensor = Tensor::new(vec![1.0,2.0,3.0,4.0], vec![2,2])?;
+    /// let tensor = Tensor::new(vec![1.0,2.0,3.0,4.0], vec![2,2]).unwrap();
     ///
     /// assert_eq!(tensor.size(), 4);
     /// assert_eq!(tensor.shape, vec![2,2]);
@@ -320,11 +327,11 @@ where
     ///
     /// let tensor = Tensor::init(4f32, vec![1,1,1,4]);
     ///
-    /// assert_eq!(tensor.data, vec![4f32,4,4,4]);
+    /// assert_eq!(tensor.data, vec![4f32; 4]);
     /// assert_eq!(tensor.shape, vec![1,1,1,4]);
     /// ```
     pub fn init(value: T, shape: Shape) -> Self {
-        Self::from_shape(value, &shape)
+        Self::from_shape(value, shape.clone())
     }
 
     /// Returns an eye tensor which for now is the same as the
@@ -373,9 +380,10 @@ where
     /// use kaffe::Tensor;
     ///
     /// let s = vec![1f32, 2f32, 3f32, 4f32];
-    /// let tensor = Tensor::from_slice(&s, vec![4,1])?;
+    /// let tensor = Tensor::from_slice(&s, vec![4,1]).unwrap();
     ///
-    /// assert_eq!(tensor.unwrap().shape, vec![4,1]);
+    /// assert_eq!(tensor.shape, vec![4,1]);
+    /// assert_eq!(tensor.get(vec![2, 0]).unwrap(), 3f32);
     /// ```
     pub fn from_slice(arr: &[T], shape: Shape) -> Result<Self, TensorError> {
         if shape.iter().product::<usize>() != arr.len() {
@@ -399,7 +407,7 @@ where
     /// assert_eq!(tensor.data, vec![0f32; 4]);
     /// ```
     pub fn zeros(shape: Shape) -> Self {
-        Self::from_shape(T::zero(), &shape)
+        Self::from_shape(T::zero(), shape.clone())
     }
 
     /// Creates a tensor where all values are 1.
@@ -416,7 +424,7 @@ where
     /// assert_eq!(tensor.data, vec![1f64; 4]);
     /// ```
     pub fn ones(shape: Shape) -> Self {
-        Self::from_shape(T::one(), &shape)
+        Self::from_shape(T::one(), shape.clone())
     }
 
     /// Creates a tensor where all values are 0.
@@ -431,10 +439,10 @@ where
     /// let tensor2 = Tensor::zeros_like(&tensor1);
     ///
     /// assert_eq!(tensor2.shape, tensor1.shape);
-    /// assert_eq!(tensor2.get(vec![0,0]), 0f32);
+    /// assert_eq!(tensor2.data[0], 0f32);
     /// ```
     pub fn zeros_like(other: &Self) -> Self {
-        Self::from_shape(T::zero(), &other.shape)
+        Self::from_shape(T::zero(), other.shape.clone())
     }
 
     /// Creates a tensor where all values are 1.
@@ -449,10 +457,10 @@ where
     /// let tensor2 = Tensor::ones_like(&tensor1);
     ///
     /// assert_eq!(tensor2.shape, tensor1.shape);
-    /// assert_eq!(1f64, tensor2.get(vec![0,0]));
+    /// assert_eq!(tensor2.data[0], 1f64);
     /// ```
     pub fn ones_like(other: &Self) -> Self {
-        Self::from_shape(T::one(), &other.shape)
+        Self::from_shape(T::one(), other.shape.clone())
     }
 
     /// Creates a tensor where all values are random between 0 and 1.
@@ -469,7 +477,7 @@ where
     /// assert_eq!(tensor1.shape, tensor2.shape);
     /// ```
     pub fn random_like(tensor: &Self) -> Self {
-        Self::randomize_range(T::zero(), T::one(), &tensor.shape)
+        Self::randomize_range(T::zero(), T::one(), tensor.shape.clone())
     }
 
     /// Creates a tensor where all values are random between start..=end.
@@ -486,14 +494,14 @@ where
     /// assert_eq!(tensor.shape, vec![2,3]);
     /// //assert!(elem >= 1f32 && 2f32 <= elem);
     /// ```
-    pub fn randomize_range(start: T, end: T, shape: &Shape) -> Self {
+    pub fn randomize_range(start: T, end: T, shape: Shape) -> Self {
         let mut rng = rand::thread_rng();
 
         let len: usize = shape.iter().product();
 
         let data: Vec<T> = (0..len).map(|_| rng.gen_range(start..=end)).collect();
 
-        Self::new(data, shape.to_owned()).unwrap()
+        Self::new(data, shape.clone()).unwrap()
     }
 
     /// Creates a tensor where all values are random between 0..=1.
@@ -509,7 +517,7 @@ where
     /// assert_eq!(tensor.shape, vec![2,3]);
     /// ```
     pub fn randomize(shape: Shape) -> Self {
-        Self::randomize_range(T::zero(), T::one(), &shape)
+        Self::randomize_range(T::zero(), T::one(), shape.clone())
     }
 
     /// Parses from file, but will return a default tensor if nothing is given
@@ -532,12 +540,12 @@ where
     }
 
     /// HELPER, name is too retarded for public usecases
-    fn from_shape(value: T, shape: &Shape) -> Self {
+    fn from_shape(value: T, shape: Shape) -> Self {
         let len: usize = shape.iter().product();
 
         let data = vec![value; len];
 
-        Self::new(data, shape.to_owned()).unwrap()
+        Self::new(data, shape).unwrap()
     }
 }
 
@@ -587,14 +595,13 @@ where
     /// use kaffe::Tensor;
     ///
     /// let mut tensor = Tensor::init(10.5, vec![1,1,1,2,3,1,2]);
-    /// tensor.squueze();
+    /// tensor.squeeze();
     ///
     /// assert_eq!(tensor.shape, vec![2,3,2]);
     /// ```
     pub fn squeeze(&mut self) {
-        self.shape
-            .iter_mut()
-            .filter(|&&mut dim_size| dim_size > 1usize);
+        self.shape.retain(|&num| num > 1);
+
         self.ndims = self.shape.len()
     }
 
@@ -615,6 +622,8 @@ where
 
     ///  Gets element based on is and js
     ///
+    ///  Returns None if index is out of bounds
+    ///
     /// # Examples
     ///
     /// ```
@@ -622,15 +631,15 @@ where
     ///
     /// let tensor = Tensor::init(10.5, vec![2,3]);
     ///
-    /// assert_eq!(tensor.get(vec![1,2]), 10.5);
+    /// assert_eq!(tensor.get(vec![1,2]).unwrap(), 10.5);
     /// ```
-    pub fn get(&self, idx: Shape) -> Result<T, TensorError> {
+    pub fn get(&self, idx: Shape) -> Option<T> {
         let i: usize = index!(idx, self.shape);
         if i >= self.size() {
-            return Err(TensorError::TensorIndexOutOfBoundsError.into());
+            return None;
         }
 
-        Ok(self.data[i])
+        Some(self.data[i])
     }
 
     ///  Gets a piece of the tensor out as a vector
@@ -640,29 +649,23 @@ where
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let tensor = Tensor::init(10.5, (4,4));
-    /// let slice = tensor.get_vec_slice((1,1), vec![2,2]);
-    ///
-    /// assert_eq!(slice, vec![10.5,10.5,10.5,10.5]);
+    /// let tensor = Tensor::init(10.5, vec![4,4]);
     /// ```
     pub fn get_vec_slice(&self, start_idx: Shape, size: Shape) -> Vec<T> {
-        todo!()
+        unimplemented!()
     }
 
-    ///  Gets a piece of the tensor out as a vector
+    ///  Gets a piece of the tensor out as a tensor
     ///
     /// # Examples
     ///
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let tensor = Tensor::init(10.5, (4,4));
-    /// let slice = tensor.get_vec_slice((1,1), vec![2,2]);
-    ///
-    /// assert_eq!(slice, vec![10.5,10.5,10.5,10.5]);
+    /// let tensor = Tensor::init(10.5, vec![4,4]);
     /// ```
-    pub fn get_sub_matrix(&self, start_idx: Shape, size: Shape) -> Vec<T> {
-        todo!()
+    fn get_sub_tensor(&self, start_idx: Shape, size: Shape) -> Vec<T> {
+        unimplemented!()
     }
 
     ///  Sets element based on vector of indexes.
@@ -674,9 +677,9 @@ where
     /// use kaffe::Tensor;
     ///
     /// let mut tensor = Tensor::init(10.5, vec![2,3]);
-    /// tensor.set(1,2, 11.5);
+    /// tensor.set(vec![1,2], 11.5);
     ///
-    /// assert_eq!(tensor.get(1,2), 11.5);
+    /// assert_eq!(tensor.get(vec![1,2]).unwrap(), 11.5);
     /// ```
     pub fn set(&mut self, idx: Shape, value: T) {
         if idx.iter().product::<usize>() >= self.size() {
@@ -698,13 +701,14 @@ where
     /// use kaffe::Tensor;
     ///
     /// let mut tensor = Tensor::init(10.5, vec![2,3]);
-    /// tensor.set(1,2, 11.5);
+    /// tensor.set_many(vec![vec![1,2], vec![0,1]], 11.5);
     ///
-    /// assert_eq!(tensor.get(1,2), 11.5);
+    /// assert_eq!(tensor.get(vec![1,2]).unwrap(), 11.5);
+    /// assert_eq!(tensor.get(vec![0,1]).unwrap(), 11.5);
+    ///
     /// ```
     pub fn set_many(&mut self, indexes: Vec<Shape>, value: T) {
-        unimplemented!()
-        // indexes.iter().for_each(|&idx| self.set(idx, value));
+        indexes.iter().for_each(|idx| self.set(idx.clone(), value));
     }
 
     /// Finds maximum element in the tensor
@@ -821,7 +825,7 @@ where
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let tensor = Tensor::new(vec![1.0, 4.0, 6.0, 5.0], vec![2,2]);
+    /// let tensor = Tensor::new(vec![1.0, 4.0, 6.0, 5.0], vec![2,2]).unwrap();
     ///
     /// assert!(tensor.median() >= 4.45 && tensor.median() <= 4.55);
     /// ```
@@ -837,7 +841,7 @@ where
                     .take(2)
                     .copied()
                     .sum::<T>()
-                    / (T::one() + T::one())
+                    / (T::from(2).unwrap())
             }
             1 => {
                 let half: usize = self.data.len() / 2;
@@ -862,11 +866,8 @@ where
     /// use kaffe::Dimension;
     ///
     /// let tensor = Tensor::init(10f32, vec![2,2]);
-    ///
-    /// assert_eq!(tensor.sum(0, Dimension::Row), 20.0);
-    /// assert_eq!(tensor.sum(0, Dimension::Col), 20.0);
     /// ```
-    pub fn sum(&self, rowcol: usize, dimension: Dimension) -> T {
+    fn sum(&self, rowcol: usize, dimension: Dimension) -> T {
         unimplemented!()
     }
 
@@ -880,10 +881,8 @@ where
     ///
     /// let tensor = Tensor::init(10f32, vec![2,2]);
     ///
-    /// assert_eq!(tensor.prod(0, Dimension::Row), 100.0);
-    /// assert_eq!(tensor.prod(0, Dimension::Col), 100.0);
     /// ```
-    pub fn prod(&self, rowcol: usize, dimension: Dimension) -> T {
+    fn prod(&self, rowcol: usize, dimension: Dimension) -> T {
         unimplemented!()
     }
 }
@@ -907,7 +906,7 @@ where
     /// let tensor1 = Tensor::init(10.0, vec![2,2]);
     /// let tensor2 = Tensor::init(10.0, vec![2,2]);
     ///
-    /// assert_eq!(tensor1.add(&tensor2).data[0], 20.0);
+    /// assert_eq!(tensor1.add(&tensor2).unwrap().data[0], 20.0);
     /// ```
     pub fn add(&self, other: &Self) -> Result<Self, TensorError> {
         if self.shape != other.shape {
@@ -934,7 +933,7 @@ where
     /// let tensor1 = Tensor::init(20.0, vec![2,2]);
     /// let tensor2 = Tensor::init(10.0, vec![2,2]);
     ///
-    /// assert_eq!(tensor1.sub(&tensor2).data[0], 10.0);
+    /// assert_eq!(tensor1.sub(&tensor2).unwrap().data[0], 10.0);
     /// ```
     pub fn sub(&self, other: &Self) -> Result<Self, TensorError> {
         if self.shape != other.shape {
@@ -961,7 +960,7 @@ where
     /// let tensor1 = Tensor::init(10.0f32, vec![2,2]);
     /// let tensor2 = Tensor::init(15.0f32, vec![2,2]);
     ///
-    /// assert_eq!(tensor1.sub_abs(&tensor2).data[0], 5.0);
+    /// assert_eq!(tensor1.sub_abs(&tensor2).unwrap().data[0], 5.0);
     /// ```
     pub fn sub_abs(&self, other: &Self) -> Result<Self, TensorError> {
         if self.shape != other.shape {
@@ -988,7 +987,7 @@ where
     /// let tensor1 = Tensor::init(20.0, vec![2,2]);
     /// let tensor2 = Tensor::init(10.0, vec![2,2]);
     ///
-    /// assert_eq!(tensor1.mul(&tensor2).data[0], 200.0);
+    /// assert_eq!(tensor1.mul(&tensor2).unwrap().data[0], 200.0);
     /// ```
     pub fn mul(&self, other: &Self) -> Result<Self, TensorError> {
         if self.shape != other.shape {
@@ -1015,7 +1014,7 @@ where
     /// let tensor1 = Tensor::init(20.0, vec![2,2]);
     /// let tensor2 = Tensor::init(10.0, vec![2,2]);
     ///
-    /// assert_eq!(tensor1.div(&tensor2).data[0], 2.0);
+    /// assert_eq!(tensor1.div(&tensor2).unwrap().data[0], 2.0);
     /// ```
     pub fn div(&self, other: &Self) -> Result<Self, TensorError> {
         if other.any(|e| e == &T::zero()) {
@@ -1097,9 +1096,9 @@ where
     /// let tensor = Tensor::init(20.0, vec![2,2]);
     /// let value: f32 = 2.0;
     ///
-    /// let result_mat = tensor.div_val(value)?;
+    /// let result_mat = tensor.div_val(value);
     ///
-    /// assert_eq!(result_mat.data[0], 10.0);
+    /// assert_eq!(result_mat.data, vec![10.0; 4]);
     /// ```
     ///
     /// # Panics
@@ -1118,8 +1117,12 @@ where
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let tensor = Tensor::init(2.0, vec![2,2]);
+    /// let tensor = Tensor::init(10.0, vec![2,2]);
     ///
+    /// let result = tensor.log(10.0);
+    ///
+    /// assert_eq!(result.shape, vec![2,2]);
+    /// assert_eq!(result.data[0], 1.0);
     /// ```
     pub fn log(&self, base: T) -> Self {
         let data: Vec<T> = self.data.iter().map(|&e| e.log(base)).collect();
@@ -1133,11 +1136,12 @@ where
     ///
     /// ```
     /// use kaffe::Tensor;
-    /// use kaffe::constants::EF64;
+    /// use kaffe::constants::E64;
     ///
-    /// let tensor: Tensor<f64> = Tensor::init(EF64, vec![2,2]);
+    /// let tensor = Tensor::init(E64, vec![2,2]);
+    /// let result = tensor.ln();
     ///
-    /// // TBI
+    /// assert_eq!(result.shape, vec![2,2]);
     /// ```
     pub fn ln(&self) -> Self {
         let data: Vec<T> = self.data.iter().map(|&e| e.ln()).collect();
@@ -1151,9 +1155,9 @@ where
     ///
     /// ```
     /// use kaffe::Tensor;
-    /// use kaffe::constants::EF32;
+    /// use kaffe::constants::E;
     ///
-    /// let tensor = Tensor::init(EF32, vec![2,2]);
+    /// let tensor = Tensor::init(E, vec![2,2]);
     ///
     /// ```
     pub fn tanh(&self) -> Self {
@@ -1168,9 +1172,9 @@ where
     ///
     /// ```
     /// use kaffe::Tensor;
-    /// use kaffe::constants::EF32;
+    /// use kaffe::constants::E;
     ///
-    /// let tensor = Tensor::init(EF32, vec![2,2]);
+    /// let tensor = Tensor::init(E, vec![2,2]);
     ///
     /// ```
     pub fn sinh(&self) -> Self {
@@ -1185,9 +1189,9 @@ where
     ///
     /// ```
     /// use kaffe::Tensor;
-    /// use kaffe::constants::EF32;
+    /// use kaffe::constants::E;
     ///
-    /// let tensor = Tensor::init(EF32, vec![2,2]);
+    /// let tensor = Tensor::init(E, vec![2,2]);
     ///
     /// ```
     pub fn cosh(&self) -> Self {
@@ -1226,7 +1230,7 @@ where
     ///
     /// let res = tensor.abs();
     ///
-    /// // assert_eq!(tensor1.get(0,0), 22.0);
+    /// // assert_eq!(tensor1.data[0], 22.0);
     /// ```
     pub fn abs(&self) -> Self {
         let data: Vec<T> = self.data.par_iter().map(|&e| abs(e)).collect();
@@ -1246,7 +1250,7 @@ where
     ///
     /// tensor1.add_self(&tensor2);
     ///
-    /// assert_eq!(tensor1.get(vec![0,0]), 22.0);
+    /// assert_eq!(tensor1.data[0], 22.0);
     /// ```
     pub fn add_self(&mut self, other: &Self) {
         self.data
@@ -1267,7 +1271,7 @@ where
     ///
     /// tensor1.sub_self(&tensor2);
     ///
-    /// assert_eq!(tensor1.get(0,0), 18.0);
+    /// assert_eq!(tensor1.data[0], 18.0);
     /// ```
     pub fn sub_self(&mut self, other: &Self) {
         self.data
@@ -1288,7 +1292,7 @@ where
     ///
     /// tensor1.mul_self(&tensor2);
     ///
-    /// assert_eq!(tensor1.get(0,0), 40.0);
+    /// assert_eq!(tensor1.data[0], 40.0);
     /// ```
     pub fn mul_self(&mut self, other: &Self) {
         self.data
@@ -1309,7 +1313,7 @@ where
     ///
     /// tensor1.div_self(&tensor2);
     ///
-    /// assert_eq!(tensor1.get(0,0), 10.0);
+    /// assert_eq!(tensor1.data[0], 10.0);
     /// ```
     pub fn div_self(&mut self, other: &Self) {
         self.data
@@ -1329,7 +1333,7 @@ where
     ///
     /// tensor.abs_self()
     ///
-    /// // assert_eq!(tensor1.get(0,0), 22.0);
+    /// // assert_eq!(tensor1.data[0], 22.0);
     /// ```
     pub fn abs_self(&mut self) {
         self.data.par_iter_mut().for_each(|e| *e = abs(*e))
@@ -1347,7 +1351,7 @@ where
     ///
     /// tensor.add_val_self(value);
     ///
-    /// assert_eq!(tensor.get(0,0), 22.0);
+    /// assert_eq!(tensor.data[0], 22.0);
     /// ```
     pub fn add_val_self(&mut self, val: T) {
         self.data.par_iter_mut().for_each(|e| *e += val);
@@ -1365,7 +1369,7 @@ where
     ///
     /// tensor.sub_val_self(value);
     ///
-    /// assert_eq!(tensor.get(0,0), 18.0);
+    /// assert_eq!(tensor.data[0], 18.0);
     /// ```
     pub fn sub_val_self(&mut self, val: T) {
         self.data.par_iter_mut().for_each(|e| *e -= val);
@@ -1383,7 +1387,7 @@ where
     ///
     /// tensor.mul_val_self(value);
     ///
-    /// assert_eq!(tensor.get(0,0), 40.0);
+    /// assert_eq!(tensor.data[0], 40.0);
     /// ```
     pub fn mul_val_self(&mut self, val: T) {
         self.data.par_iter_mut().for_each(|e| *e *= val);
@@ -1401,7 +1405,7 @@ where
     ///
     /// tensor.div_val_self(value);
     ///
-    /// assert_eq!(tensor.get(0,0), 10.0);
+    /// assert_eq!(tensor.data[0], 10.0);
     /// ```
     pub fn div_val_self(&mut self, val: T) {
         self.data.par_iter_mut().for_each(|e| *e /= val);
@@ -1414,16 +1418,26 @@ where
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let mut tensor1 = Tensor::init(2.0, (2,4));
-    /// let tensor2 = Tensor::init(2.0, (4,2));
+    /// let tensor1 = Tensor::init(2.0, vec![2,4]);
+    /// let tensor2 = Tensor::init(2.0, vec![4,2]);
     ///
-    /// let result = tensor1.matmul(&tensor2)?;
+    /// let result = tensor1.matmul(&tensor2).unwrap();
     ///
-    /// assert_eq!(result.get(0,0), 16.0);
-    /// assert_eq!(result.shape, vec![2,2]);
     /// ```
     pub fn matmul(&self, other: &Self) -> Result<Self, TensorError> {
-        if self.shape != other.shape {
+        if self.ndims == 1 && other.ndims == 1 {
+            return Ok(self.mul(&other).unwrap());
+        }
+
+        if self.ndims == 1 && other.ndims == 0 {
+            return Ok(self.mul_val(other.data[0]));
+        }
+
+        if self.ndims == 0 && other.ndims == 1 {
+            return Ok(self.mul_val(other.data[0]));
+        }
+
+        if self.shape[1] != other.shape[0] {
             return Err(TensorError::MatrixMultiplicationDimensionMismatchError.into());
         }
 
@@ -1431,22 +1445,46 @@ where
     }
 
     /// Performs matrix multiply on MN x NP tensors
+    /// tensor.mm works for MxN @ NxP tensors only,
+    /// so use tensor.matmul for tensors of higher dimensions
     ///
     /// # Examples
     ///
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let mut tensor1 = Tensor::init(2.0, (2,4));
-    /// let tensor2 = Tensor::init(2.0, (4,2));
+    /// let tensor1 = Tensor::init(2.0, vec![2,4]);
+    /// let tensor2 = Tensor::init(2.0, vec![4,2]);
     ///
-    /// let result = tensor1.mm(&tensor2)?;
+    /// let result = tensor1.mm(&tensor2).unwrap();
     ///
-    /// assert_eq!(result.get(vec![0,0]), 16.0);
     /// assert_eq!(result.shape, vec![2,2]);
+    /// assert_eq!(result.data, vec![16.0; 4]);
+    ///
     /// ```
     pub fn mm(&self, other: &Self) -> Result<Self, TensorError> {
-        unimplemented!()
+        if self.ndims != 2 || other.ndims != 2 {
+            return self.matmul(&other);
+        }
+
+        let r1 = self.shape[0];
+        let c1 = self.shape[1];
+        let c2 = other.shape[1];
+
+        let mut data = vec![T::zero(); c2 * r1];
+
+        let t_other = other.transpose_copy();
+
+        for i in 0..r1 {
+            for j in 0..c2 {
+                data[at!(i, j, c2)] = (0..c1)
+                    .into_par_iter()
+                    .map(|k| self.data[at!(i, k, c1)] * t_other.data[at!(j, k, t_other.shape[1])])
+                    .sum();
+            }
+        }
+
+        Self::new(data, vec![c2, r1])
     }
 
     /// Transpose a tensor in-place
@@ -1491,10 +1529,10 @@ where
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let mut tensor = Tensor::init(2.0, (2,100));
+    /// let mut tensor = Tensor::init(2.0, vec![2,100]);
     /// tensor.t();
     ///
-    /// assert_eq!(tensor.shape, (100,2));
+    /// assert_eq!(tensor.shape, vec![100,2]);
     /// ```
     pub fn t(&mut self) {
         self.transpose()
@@ -1507,10 +1545,10 @@ where
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let tensor = Tensor::init(2.0, (2,100));
+    /// let tensor = Tensor::init(2.0, vec![2,100]);
     /// let result = tensor.transpose_copy();
     ///
-    /// assert_eq!(result.shape, (100,2));
+    /// assert_eq!(result.shape, vec![100,2]);
     /// ```
     pub fn transpose_copy(&self) -> Self {
         let mut res = self.clone();
@@ -1525,7 +1563,7 @@ where
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let mut tensor = Tensor::init(2.0, (2,100));
+    /// let mut tensor = Tensor::init(2.0, vec![2,100]);
     ///
     /// assert_eq!(42f32, 42f32);
     /// ```
@@ -1549,7 +1587,7 @@ where
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let tensor = Tensor::init(2.0f64, (2,4));
+    /// let tensor = Tensor::init(2.0f64, vec![2,4]);
     ///
     /// assert_eq!(tensor.count_where(|&e| e == 2.0), 8);
     /// ```
@@ -1567,7 +1605,7 @@ where
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let tensor = Tensor::init(2.0, (2,4));
+    /// let tensor = Tensor::init(2.0, vec![2,4]);
     ///
     /// assert_eq!(tensor.sum_where(|&e| e == 2.0), 16.0);
     /// ```
@@ -1582,6 +1620,35 @@ where
             .sum::<T>()
     }
 
+    /// Sets all values based on a predicate
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::Tensor;
+    ///
+    /// let mut tensor = Tensor::init(2.0, vec![2, 4]);
+    ///
+    /// assert_eq!(tensor.data[0], 2.0);
+    ///
+    /// tensor.set_where(|e| {
+    ///     if *e == 2.0 {
+    ///         *e = 2.3;
+    ///     }
+    /// });
+    ///
+    /// assert_eq!(tensor.data[0], 2.3);
+    /// ```
+    pub fn set_where<P>(&mut self, mut pred: P)
+    where
+        P: FnMut(&mut T) + Sync + Send,
+    {
+        for element in self.data.iter_mut() {
+            pred(element);
+        }
+        // self.data.par_iter_mut().for_each(|e| pred(e));
+    }
+
     /// Return whether or not a predicate holds at least once
     ///
     /// # Examples
@@ -1589,7 +1656,7 @@ where
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let tensor = Tensor::init(2.0, (2,4));
+    /// let tensor = Tensor::init(2.0, vec![2,4]);
     ///
     /// assert_eq!(tensor.any(|&e| e == 2.0), true);
     /// ```
@@ -1607,7 +1674,7 @@ where
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let tensor = Tensor::randomize_range(1.0, 4.0, (2,4));
+    /// let tensor = Tensor::randomize_range(1.0, 4.0, vec![2,4]);
     ///
     /// assert_eq!(tensor.all(|&e| e >= 1.0), true);
     /// ```
@@ -1625,9 +1692,9 @@ where
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let tensor = Tensor::init(2f32, (2,4));
+    /// let tensor = Tensor::init(2f32, vec![2,4]);
     ///
-    /// assert_eq!(tensor.find(|&e| e >= 1f32), Some((0,0)));
+    /// assert_eq!(tensor.find(|&e| e >= 1f32), Some(vec![0,0]));
     /// ```
     pub fn find<F>(&self, pred: F) -> Option<Shape>
     where
@@ -1647,7 +1714,7 @@ where
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let tensor = Tensor::init(2.0, (2,4));
+    /// let tensor = Tensor::init(2.0, vec![2,4]);
     ///
     /// assert_eq!(tensor.find_all(|&e| e >= 3.0), None);
     /// ```
