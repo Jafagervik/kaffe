@@ -20,3 +20,20 @@ fn matmul() {
     assert!(c.shape == vec![3, 3]);
     assert!(c.size() == 9);
 }
+
+#[test]
+fn concat() {
+    let tensor = Tensor::init(10.5, vec![7, 200, 3]);
+    let tensor2 = Tensor::init(10.5, vec![150, 3]);
+
+    let result = tensor.concat(&tensor2).unwrap();
+
+    assert_eq!(result.shape, vec![7, 350, 3]);
+
+    let mut tensor = Tensor::init(42.5, vec![7, 200, 3]);
+    let tensor2 = Tensor::init(10.5, vec![77, 3]);
+
+    tensor.extend(&tensor2);
+
+    assert_eq!(tensor.shape, vec![7, 277, 3]);
+}

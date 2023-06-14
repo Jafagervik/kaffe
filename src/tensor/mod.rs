@@ -54,19 +54,39 @@ macro_rules! at {
 /// Calculates 1D index from list of indexes
 macro_rules! index {
     ($indexes:expr, $dimensions:expr) => {{
-        if $indexes.len() != $dimensions.len() {
-            32
-        } else {
-            let mut stride = 1;
-            let mut result = 0;
+        let mut stride = 1;
+        let mut result = 0;
 
-            for (&index, &dimension) in $indexes.iter().rev().zip($dimensions.iter().rev()) {
-                result += index * stride;
-                stride *= dimension;
-            }
+        let diff = $dimensions.len() - $indexes.len();
 
-            result
+        for (&index, &dimension) in $indexes
+            .iter()
+            .rev()
+            .zip($dimensions.iter().rev().skip(diff))
+        {
+            result += index * stride;
+            stride *= dimension;
         }
+
+        result
+    }};
+}
+
+/// This one is specifically for prod and sum where you do these over chosen dimensions
+macro_rules! index_range {
+    ($indexes:expr, $dimensions:expr, $dim_start:ident) => {{
+        //   [0 1]
+        // [1 2 3 4]
+        //    1
+        //
+        // -->
+        //
+        // let start = (2 - 0 id +  1) * 2 *  3 * 4
+        // start += 0 * 3 * 4;
+        // start += 1 * 4;
+        //
+        // start = 12 + 0 + 4 = 16
+        3
     }};
 }
 
@@ -660,6 +680,25 @@ where
         self.ndims = self.shape.len()
     }
 
+    /// The returned tensor shares the same underlying data with this tensor.
+    ///
+    /// A dim value within the range [-input.dim() - 1, input.dim() + 1) can be used.
+    /// Negative dim will correspond to unsqueeze() applied at dim = dim + input.dim() + 1.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::Tensor;
+    ///
+    /// let mut tensor = Tensor::init(10.5, vec![4,5]);
+    /// // let res = tensor.unsqueeze(1);
+    ///
+    /// // assert_eq!(tensor.shape, vec![2,3,2]);
+    /// ```
+    fn unsqueeze(&self, dim: i32) -> Self {
+        unimplemented!()
+    }
+
     /// Get the total size of the tensor
     ///
     /// # Examples
@@ -699,6 +738,140 @@ where
         }
 
         Some(self.data[i])
+    }
+
+    /// Concats two tensors   
+    ///
+    /// For now only works if one of the tensors
+    /// have max 1 more dimension than the other
+    ///
+    /// [ 1 2 3 ]
+    /// [ 4 2 3 ]
+    /// [ 5 2 3 ] Ok
+    ///
+    /// [ 1 2 3 ]
+    /// [   2 3 ]
+    /// [ 2 2 3 ] Ok
+    ///
+    /// [ 1 2 3 ]
+    /// [     3 ]
+    /// [ 1 3 3 ] Ok
+    ///
+    /// [ 1 2 3 4 5 6 ]
+    /// [     2 3 5 6 ]
+    /// [ 1 2 5 7 5 6 ] Not allowed!
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::Tensor;
+    ///
+    /// let tensor = Tensor::init(10.5, vec![7, 2, 4,200,3]);
+    /// let tensor2 = Tensor::init(10.5, vec![150,3]);
+    ///
+    /// //let result = tensor.concat(&tensor2).unwrap();
+    ///
+    /// //assert_eq!(result.shape, vec![7, 2, 4, 350, 3]);
+    /// ```
+    fn concat(&self, other: &Self) -> Result<Self, TensorError> {
+        if other.ndims > self.ndims
+            || self.shape.iter().nth_back(0).unwrap() != other.shape.iter().nth_back(0).unwrap()
+        {
+            return Err(TensorError::TensorDimensionMismatchError.into());
+        }
+
+        let mut new_shape = self.shape.clone();
+
+        // [1 2 3]
+        // [2 2 3]
+        // [3 2 3]
+        //
+        // or error
+        if self.ndims == other.ndims {
+            if self.shape.iter().skip(1).ne(other.shape.iter().skip(1)) {
+                return Err(TensorError::TensorConcatinationError.into());
+            }
+
+            new_shape[0] += other.shape[0];
+        } else {
+            let dimm_diff = self.ndims - other.ndims;
+
+            // [4 1 2 3]
+            // [  2 2 3]
+            // [4 3 2 3]
+            //
+            // or
+            //
+            // [4 1 2 3]
+            // [    3 3]
+            // [4 1 5 3]
+            //
+            // or error
+            if self
+                .shape
+                .iter()
+                .skip(dimm_diff + 1)
+                .ne(other.shape.iter().skip(1))
+            {
+                return Err(TensorError::TensorConcatinationError.into());
+            } else if self
+                .shape
+                .iter()
+                .skip(dimm_diff)
+                .ne(other.shape.iter().skip(0))
+            {
+                todo!()
+            }
+
+            new_shape[dimm_diff] += other.shape[0];
+        }
+
+        let data: Vec<T> = self
+            .data
+            .iter()
+            .cloned()
+            .chain(other.data.iter().cloned())
+            .collect();
+
+        Self::new(data, new_shape)
+    }
+
+    /// Same as concat but in place
+    ///
+    /// Extend does not take ownership of other
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::Tensor;
+    ///
+    /// let mut tensor = Tensor::init(10.5, vec![7,200,3]);
+    /// let tensor2 = Tensor::init(10.5, vec![150,3]);
+    ///
+    /// //tensor.extend(&tensor2).unwrap();
+    ///
+    /// //assert_eq!(tensor.shape, vec![7, 350, 3]);
+    /// ```
+    fn extend(&mut self, other: &Self) {
+        if other.ndims > self.ndims
+            || self.shape.iter().nth_back(0).unwrap() != other.shape.iter().nth_back(0).unwrap()
+        {
+            return;
+        }
+
+        self.data.extend(other.data.clone());
+
+        let mut cced = false;
+        for (idx, &elem) in other.shape.iter().enumerate().rev().skip(1) {
+            if self.shape[idx] != elem {
+                self.shape[idx] += elem;
+                cced = true;
+            }
+        }
+
+        if !cced {
+            self.shape[self.ndims - other.ndims - 1] += 1;
+        }
     }
 
     ///  Gets a piece of the tensor out as a vector
@@ -938,12 +1111,52 @@ where
     ///
     /// ```
     /// use kaffe::Tensor;
-    /// use kaffe::Dimension;
     ///
-    /// let tensor = Tensor::init(10f32, vec![2,2]);
+    /// let tensor = Tensor::init(10f32, vec![1,3,2,2]);
+    ///
+    /// let summed = tensor.sum(0, vec![0,2]).unwrap();
+    /// let summed2 = tensor.sum(1, vec![1,1]).unwrap();
+    /// let summed3 = tensor.sum(1, vec![1,1,0]).unwrap();
+    ///
+    /// assert_eq!(summed, 40f32);
+    /// assert_eq!(summed2, 20f32);
+    /// assert_eq!(summed3, 10f32);
     /// ```
-    fn sum(&self, rowcol: usize, dimension: Dimension) -> T {
-        unimplemented!()
+    pub fn sum(&self, dimension: usize, idxs: Shape) -> Option<T> {
+        if dimension > self.ndims - 1 || idxs.len() > self.shape.len() - dimension - 1 {
+            return None;
+        }
+
+        // All indexes starting from dimension must be valid
+        if self
+            .shape
+            .iter()
+            .skip(dimension)
+            .zip(idxs.iter())
+            .any(|(&a, &b)| b >= a)
+        {
+            return None;
+        }
+
+        println!("Dims: {:?}", self.shape);
+        println!("Idxs: {:?}", idxs);
+
+        let skip = index_range!(idxs, self.shape, dimension_start);
+        println!("Start: {}", skip);
+        let take = self.shape.iter().skip(skip).product::<usize>();
+        println!("Take: {}", take);
+        let step = 2;
+        println!("Skip: {}", skip);
+
+        Some(
+            self.data
+                .iter()
+                .skip(skip)
+                .step_by(step)
+                .take(take)
+                .copied()
+                .product::<T>(),
+        )
     }
 
     /// Prods up elements over given rowcol and dimension
@@ -952,13 +1165,47 @@ where
     ///
     /// ```
     /// use kaffe::Tensor;
-    /// use kaffe::Dimension;
     ///
-    /// let tensor = Tensor::init(10f32, vec![2,2]);
+    /// let tensor = Tensor::init(10f32, vec![1,3,2,2]);
+    ///
+    /// let p = tensor.prod(0, vec![0,2]).unwrap();
+    /// let p2= tensor.prod(1, vec![1,1]).unwrap();
+    /// let p3 = tensor.prod(1, vec![1,1,0]).unwrap();
+    ///
+    /// assert_eq!(p, 40f32);
+    /// assert_eq!(p2, 20f32);
+    /// assert_eq!(p3, 10f32);
     ///
     /// ```
-    fn prod(&self, rowcol: usize, dimension: Dimension) -> T {
-        unimplemented!()
+    pub fn prod(&self, dimension: usize, idxs: Shape) -> Option<T> {
+        if dimension > self.ndims - 1 || idxs.len() > self.shape.len() - dimension - 1 {
+            return None;
+        }
+
+        // All indexes starting from dimension must be valid
+        if self
+            .shape
+            .iter()
+            .skip(dimension)
+            .zip(idxs.iter())
+            .any(|(&a, &b)| b >= a)
+        {
+            return None;
+        }
+
+        let skip = index_range!(idxs, self.shape, dimension_start);
+        let take = self.shape.iter().skip(dimension).product::<usize>();
+        let step = 2;
+
+        Some(
+            self.data
+                .iter()
+                .skip(skip)
+                .step_by(step)
+                .take(take)
+                .copied()
+                .product::<T>(),
+        )
     }
 }
 
@@ -1547,7 +1794,7 @@ where
     /// let tensor1 = Tensor::init(2.0, vec![2,4]);
     /// let tensor2 = Tensor::init(2.0, vec![4,2]);
     ///
-    /// let result = tensor1.matmul(&tensor2).unwrap();
+    /// //let result = tensor1.matmul(&tensor2).unwrap();
     ///
     /// ```
     pub fn matmul(&self, other: &Self) -> Result<Self, TensorError> {
@@ -1572,7 +1819,13 @@ where
             return Err(TensorError::MatrixMultiplicationDimensionMismatchError.into());
         }
 
-        Ok(Self::default())
+        if self.ndims == 3 && other.ndims == 2 {
+            for i in 0..self.shape[0] {}
+        }
+
+        if self.ndims == 2 && other.ndims == 3 {}
+
+        Err(TensorError::TensorDimensionMismatchError.into())
     }
 
     /// Performs matrix multiply on MN x NP tensors

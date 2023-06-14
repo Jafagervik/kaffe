@@ -16,6 +16,8 @@ pub enum TensorError {
     /// Occurs on matrix operations where there is a dimension mismatch between
     /// the two matrices.
     TensorDimensionMismatchError,
+    /// Concatination Error
+    TensorConcatinationError,
     /// If reading tensor from file and an error occurs,
     /// this will be thrown
     TensorParseError,
@@ -42,6 +44,13 @@ impl Display for TensorError {
             }
             TensorError::TensorDimensionMismatchError => {
                 write!(f, "The tensors provided are both not on the form M x N")
+            }
+
+            TensorError::TensorConcatinationError => {
+                write!(
+                    f,
+                    "Tensors could not be concatinated or extended due to more than 1 dim mismatch"
+                )
             }
             TensorError::TensorParseError => write!(f, "Failed to parse tensor from file"),
             TensorError::TensorDivideByZeroError => write!(f, "Tried to divide by zero"),
