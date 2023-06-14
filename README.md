@@ -22,16 +22,45 @@ Why? Because sometimes you wanna make cool and fast stuff in rust :)
 ### Matrix basic example 
 
 ```rust 
-use kaffe::Matrix;
+use kaffe::tensor::Tensor;
 
 fn main() {
-    let a = Matrix::init(2f32, (2,3));
-    let b = Matrix::init(4f32, (2,3));
+    let t = Tensor::init(10f32, vec![2, 2, 2]);
 
-    let c = a.add(&b);
+    let res = t.log(10.0);
 
-    // To print this beautiful matrix:
-    c.print();
+    println!("{:?}", res.data);
+
+    let tensor = Tensor::randomize_range(1.0, 4.0, vec![2, 4]);
+
+    assert_eq!(tensor.all(|&e| e >= 1.0), true);
+
+    let tensor = Tensor::init(20.0, vec![2, 2]);
+    let value: f32 = 2.0;
+
+    let result_mat = tensor.div_val(value);
+
+    assert_eq!(result_mat.data, vec![10.0; 4]);
+
+    let tensor = Tensor::init(4f32, vec![1, 1, 1, 4]);
+
+    assert_eq!(tensor.data, vec![4f32; 4]);
+    assert_eq!(tensor.shape, vec![1, 1, 1, 4]);
+
+    let mut tensor = Tensor::init(2.0, vec![2, 4]);
+    println!("{}", tensor.data[0]);
+
+    tensor.set_where(|e| {
+        if *e == 2.0 {
+            *e = 2.3;
+        }
+    });
+
+    println!("{}", tensor.data[0]);
+
+    assert_eq!(tensor.data[0], 2.3);
+
+    println!("{}", tensor.get(vec![0, 0]).unwrap());
 }
 ```
 
@@ -109,8 +138,6 @@ fn test(model: &Model,
     test_loss /= test_dataloader.count();
 }
 
-// TODO: Add Clap
-
 fn main() {
     let d1 = download_dataset(url, "../data", true, true, transform);
     let d2 = download_dataset(url, "../data", false, false, transform);
@@ -144,13 +171,9 @@ Full API documentation can be found [here](https://docs.rs/kaffe/latest/kaffe/).
 
 ## Features 
 - [X] Blazingly fast
-- [X] Common matrix operations exists under matrix module
+- [X] Common tensor operations exists under tensor module
 - [X] Optimizers 
+- [X] Support for both f32 and f64 
 - [X] ReLU, GeLU, PReLU, Sigmoid 
 - [ ] Basic neural net features
 
-### Version Control 
-
-- Breaking changes: X.0.0
-- New features: X.X+1.0
-- Adjustments/Fixes: X.X.X+1

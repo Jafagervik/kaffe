@@ -1,6 +1,6 @@
 [package]
 name = "kaffe"
-version = "0.1.4"
+version = "0.2.0"
 edition = "2021"
 authors = ["Joergen Aleksander Fagervik <jorgenafagervik@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -16,8 +16,10 @@ categories = ["mathematics", "science"]
 [dependencies]
 anyhow = "1.0.71"
 itertools = "0.10.5"
+num-traits = "0.2.15"
 rand = "0.8.5"
 rayon = "1.7.0"
+serde = { version = "1.0.164", features = ["derive"] }
 
 [dev-dependencies]
 criterion = "0.5.1"
