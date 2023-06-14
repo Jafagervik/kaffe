@@ -141,7 +141,10 @@ where
 {
 }
 
-#[derive(Clone, PartialEq, PartialOrd, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
+/// Representation of a Tensor
+/// Contains the data, shape of the tensor as well as number
+/// of dimensions
 pub struct Tensor<'a, T>
 where
     T: TensorElement,
@@ -255,7 +258,35 @@ where
     Vec<&'a T>: IntoParallelRefIterator<'a>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Ok(())
+        let nrows = self.shape.iter().nth_back(1).unwrap().clone();
+        let ncols = self.shape.iter().nth_back(0).unwrap().clone();
+
+        write!(f, "[");
+
+        // Large matrices
+        if nrows > 10 || ncols > 10 {
+            write!(f, "...");
+        }
+
+        for i in 0..nrows {
+            for j in 0..ncols {
+                if i == 0 {
+                    write!(f, "{:.3} ", self.get(vec![i, j]).unwrap());
+                } else {
+                    write!(f, " {:.3}", self.get(vec![i, j]).unwrap());
+                }
+
+                if j >= 5 {
+                    break;
+                }
+            }
+            // Print ] on same line if youre at the end
+            if i == nrows - 1 || i >= 5 {
+                break;
+            }
+            write!(f, "\n");
+        }
+        writeln!(f, "], dtype={}", std::any::type_name::<T>())
     }
 }
 
@@ -279,6 +310,54 @@ where
     /// ```
     fn default() -> Self {
         Self::eye(3)
+    }
+}
+
+/// Customized print
+impl<'a, T> Tensor<'a, T>
+where
+    T: TensorElement,
+    <T as FromStr>::Err: Error + 'static,
+    Vec<T>: IntoParallelIterator,
+    Vec<&'a T>: IntoParallelRefIterator<'a>,
+{
+    /// Prints out matrix like {} would,
+    /// but with however many decimals you'd want!
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::Tensor;
+    ///
+    /// let t: Tensor<f32> = Tensor::default();
+    ///
+    /// t.print(4); // will display a 3x3 eye matrix with 3 decimals
+    /// ```
+    pub fn print(&self, decimals: usize) {
+        let nrows = self.shape.iter().nth_back(1).unwrap().clone();
+        let ncols = self.shape.iter().nth_back(0).unwrap().clone();
+
+        print!("[");
+
+        for i in 0..nrows {
+            for j in 0..ncols {
+                if i == 0 {
+                    print!("{:.decimals$} ", self.get(vec![i, j]).unwrap());
+                } else {
+                    print!(" {:.decimals$}", self.get(vec![i, j]).unwrap());
+                }
+
+                if j >= 5 {
+                    break;
+                }
+            }
+            // Print ] on same line if youre at the end
+            if i == nrows - 1 || i >= 5 {
+                break;
+            }
+            print!("\n");
+        }
+        println!("], dtype={}", std::any::type_name::<T>());
     }
 }
 
@@ -1444,10 +1523,12 @@ where
     ///
     /// ```
     pub fn matmul(&self, other: &Self) -> Result<Self, TensorError> {
+        // Return normal multiplication if both tensors are vectors
         if self.ndims == 1 && other.ndims == 1 {
             return Ok(self.mul(&other).unwrap());
         }
 
+        // Return scalar vector operation
         if self.ndims == 1 && other.ndims == 0 {
             return Ok(self.mul_val(other.data[0]));
         }
@@ -1456,7 +1537,10 @@ where
             return Ok(self.mul_val(other.data[0]));
         }
 
-        if self.shape[1] != other.shape[0] {
+        // Matrix multiplication mismatch
+        if self.shape.iter().nth_back(0).unwrap().clone()
+            != other.shape.iter().nth_back(1).unwrap().clone()
+        {
             return Err(TensorError::MatrixMultiplicationDimensionMismatchError.into());
         }
 
