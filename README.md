@@ -171,7 +171,7 @@ Full API documentation can be found [here](https://docs.rs/kaffe/latest/kaffe/).
 
 ## Features 
 - [X] Blazingly fast
-- [X] Common tensor operations exists under tensor  module
+- [X] Common tensor operations exists under tensor module
 - [X] Optimizers 
 - [X] Support for both f32 and f64 
 - [X] ReLU, GeLU, PReLU, Sigmoid 
