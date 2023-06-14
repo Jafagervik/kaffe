@@ -2,6 +2,10 @@
 //!
 //! Matrix is only good enough up until a certain point
 
+pub mod tensorerror;
+
+use tensorerror::*;
+
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
@@ -83,56 +87,7 @@ macro_rules! index_list {
     }};
 }
 
-#[derive(Debug, PartialEq)]
-/// Common Tensor errors that can occur
-pub enum TensorError {
-    /// Upon creation of a tensor, this could occur
-    TensorCreationError,
-    /// Index out of bound error
-    TensorIndexOutOfBoundsError,
-    /// This can only happen on matmul, where if the 2 matrices are not in the form of
-    /// (M x N) @ (N x P) then this error will occur.
-    MatrixMultiplicationDimensionMismatchError,
-    /// Occurs on matrix operations where there is a dimension mismatch between
-    /// the two matrices.
-    TensorDimensionMismatchError,
-    /// If reading tensor from file and an error occurs,
-    /// this will be thrown
-    TensorParseError,
-    /// Divide by zero
-    TensorDivideByZeroError,
-    /// File read error
-    TensorFileReadError(&'static str),
-}
-
-impl std::fmt::Display for TensorError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            TensorError::TensorCreationError => {
-                write!(f, "There was an error creating the tensor.")
-            }
-            TensorError::TensorIndexOutOfBoundsError => {
-                write!(f, "The indexes are out of bounds for the matrix")
-            }
-            TensorError::MatrixMultiplicationDimensionMismatchError => {
-                write!(
-                    f,
-                    "The two matrices supplied are not on the form M x N @ N x P"
-                )
-            }
-            TensorError::TensorDimensionMismatchError => {
-                write!(f, "The tensors provided are both not on the form M x N")
-            }
-            TensorError::TensorParseError => write!(f, "Failed to parse tensor from file"),
-            TensorError::TensorDivideByZeroError => write!(f, "Tried to divide by zero"),
-            TensorError::TensorFileReadError(path) => {
-                write!(f, "Could not read file from path: {}", path)
-            }
-        }
-    }
-}
-
-impl<'a, T> std::error::Error for Tensor<'a, T>
+impl<'a, T> Error for Tensor<'a, T>
 where
     T: TensorElement,
     <T as FromStr>::Err: Error + 'static,
@@ -605,7 +560,7 @@ where
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// // let m: Tensor<f32> = Tensor::from_file("../../test.txt")?;
+    /// // let m: Tensor<f32> = Tensor::from_file("../../test.txt").unwrap();
     ///
     /// // m.print(5);
     /// ```
@@ -617,7 +572,29 @@ where
             .map_err(|_| TensorError::TensorParseError.into())
     }
 
-    /// HELPER, name is too retarded for public usecases
+    /// Converts to another datatype
+    // pub fn to_f64(&self, datatype: impl AsRef<str>) -> Self {
+    //     let data = self
+    //         .data
+    //         .par_iter()
+    //         .map(|&e| f64::from(e))
+    //         .collect::<Vec<f64>>();
+    //
+    //     Self::new(data, self.shape.clone()).unwrap()
+    // }
+
+    /// Converts to another datatype
+    // pub fn to_f32(&self, datatype: impl AsRef<str>) -> Self {
+    //     let data = self
+    //         .data
+    //         .par_iter()
+    //         .map(|&e| f32::from(e))
+    //         .collect::<Vec<f32>>();
+    //
+    //     Self::new(data, self.shape.clone()).unwrap()
+    // }
+
+    // Helper method
     fn from_shape(value: T, shape: Shape) -> Self {
         let len: usize = shape.iter().product();
 
@@ -629,9 +606,9 @@ where
 
 /// Enum for specifying which dimension / axis to work with
 pub enum Dimension {
-    /// Row is defined as 0
+    /// Row
     Row = 0,
-    /// Col is defined as 1
+    /// Col
     Col = 1,
 }
 
