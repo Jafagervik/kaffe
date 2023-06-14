@@ -2,8 +2,6 @@
 //!
 //! Matrix is only good enough up until a certain point
 
-mod matrixmultiply;
-
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
