@@ -43,12 +43,20 @@ where
 /// use kaffe::Tensor;
 /// use kaffe::nn::pooling::MinPool;
 ///
-/// let matrix = Tensor::init(2.0, vec![4,4]);
+/// let mut matrix = Tensor::init(2.0, vec![4,4]);
+///
+/// matrix.set(vec![0,0], -2.0);
+/// matrix.set(vec![0,3], -2.0);
+/// matrix.set(vec![3,0], -2.0);
+/// matrix.set(vec![3,3], -2.0);
 ///
 /// let res = MinPool(&matrix, 2, 0);
 ///
 /// assert_eq!(res.shape, vec![2,2]);
-/// assert_eq!(res.get(vec![1,1]), 2.0);
+/// assert_eq!(res.get(vec![0,0]).unwrap(), -2.0);
+/// assert_eq!(res.get(vec![0,1]).unwrap(), -2.0);
+/// assert_eq!(res.get(vec![1,0]).unwrap(), -2.0);
+/// assert_eq!(res.get(vec![1,1]).unwrap(), -2.0);
 ///
 /// ```
 pub fn MinPool<'a, T>(x: &Tensor<'a, T>, stride: usize, padding: usize) -> Tensor<'a, T>
@@ -115,7 +123,7 @@ where
             let start_col = j * stride;
 
             // Extract the slice from the original matrix
-            let slice = x.get_vec_slice(vec![start_row, start_col], vec![stride, stride]);
+            let slice = x.get_vec_slice(vec![start_row, start_col], stride, stride);
 
             // Apply the predicate to the slice and get the result
             if let Some(value) = pred(&slice) {

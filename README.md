@@ -138,8 +138,6 @@ fn test(model: &Model,
     test_loss /= test_dataloader.count();
 }
 
-// TODO: Add Clap
-
 fn main() {
     let d1 = download_dataset(url, "../data", true, true, transform);
     let d2 = download_dataset(url, "../data", false, false, transform);

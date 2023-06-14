@@ -16,6 +16,7 @@ use std::{
 };
 
 use anyhow::Result;
+use itertools::iproduct;
 use itertools::Itertools;
 use num_traits::{
     pow,
@@ -629,9 +630,13 @@ where
     /// ```
     /// use kaffe::Tensor;
     ///
-    /// let tensor = Tensor::init(10.5, vec![2,3]);
+    /// let mut tensor = Tensor::init(10.5, vec![7,200,3]);
     ///
-    /// assert_eq!(tensor.get(vec![1,2]).unwrap(), 10.5);
+    /// tensor.set(vec![1,2,3], 4.2);
+    /// tensor.set(vec![4,100,1], 4.9);
+    ///
+    /// assert_eq!(tensor.get(vec![1,2,3]).unwrap(), 4.2);
+    /// assert_eq!(tensor.get(vec![4,100,1]).unwrap(), 4.9);
     /// ```
     pub fn get(&self, idx: Shape) -> Option<T> {
         let i: usize = index!(idx, self.shape);
@@ -644,15 +649,31 @@ where
 
     ///  Gets a piece of the tensor out as a vector
     ///
+    ///
+    ///  If some indexes are out of bounds, these will not be part of the slice
+    ///  If all are outside, nothing gets returned
+    ///
     /// # Examples
     ///
     /// ```
     /// use kaffe::Tensor;
     ///
     /// let tensor = Tensor::init(10.5, vec![4,4]);
+    ///
+    /// let slice = tensor.get_vec_slice(vec![1,1], 2, 2);
+    ///
+    /// assert_eq!(slice, vec![10.5; 4]);
     /// ```
-    pub fn get_vec_slice(&self, start_idx: Shape, size: Shape) -> Vec<T> {
-        unimplemented!()
+    pub fn get_vec_slice(&self, start_idx: Shape, dy: usize, dx: usize) -> Vec<T> {
+        let start_row = start_idx.iter().nth_back(1).unwrap().clone();
+        let start_col = start_idx.iter().nth_back(0).unwrap().clone();
+
+        let y_range = start_row..start_row + dy;
+        let x_range = start_col..start_col + dx;
+
+        iproduct!(y_range, x_range)
+            .filter_map(|(i, j)| self.get(vec![i, j]))
+            .collect()
     }
 
     ///  Gets a piece of the tensor out as a tensor
