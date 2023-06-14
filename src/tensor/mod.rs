@@ -1298,6 +1298,57 @@ where
         Self::new(data, self.shape.clone()).unwrap()
     }
 
+    /// Gets sin(x) of every value
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::Tensor;
+    /// use kaffe::constants::E;
+    ///
+    /// let tensor = Tensor::init(E, vec![2,2]);
+    ///
+    /// ```
+    pub fn sin(&self) -> Self {
+        let data: Vec<T> = self.data.iter().map(|&e| e.sin()).collect();
+
+        Self::new(data, self.shape.clone()).unwrap()
+    }
+
+    /// Gets cos(x) of every value
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::Tensor;
+    /// use kaffe::constants::E;
+    ///
+    /// let tensor = Tensor::init(E, vec![2,2]);
+    ///
+    /// ```
+    pub fn cos(&self) -> Self {
+        let data: Vec<T> = self.data.iter().map(|&e| e.cos()).collect();
+
+        Self::new(data, self.shape.clone()).unwrap()
+    }
+
+    /// Gets tan(x) of every value
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kaffe::Tensor;
+    /// use kaffe::constants::E;
+    ///
+    /// let tensor = Tensor::init(E, vec![2,2]);
+    ///
+    /// ```
+    pub fn tan(&self) -> Self {
+        let data: Vec<T> = self.data.iter().map(|&e| e.cos()).collect();
+
+        Self::new(data, self.shape.clone()).unwrap()
+    }
+
     /// Pows each value in a tensor by val times
     ///
     /// # Examples
